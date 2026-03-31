@@ -10,6 +10,9 @@ Usage:
     python scripts/run_retrain.py --lookback 90   # use 90 days of trade history
 """
 
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import click
 from src.logger import setup_logging, get_logger
 from src.config import settings

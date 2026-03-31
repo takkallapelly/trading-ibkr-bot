@@ -14,6 +14,9 @@ Safety:  The bot will REFUSE to place live orders unless TRADING_MODE=live
          Two-factor protection against accidental live trading.
 """
 
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import sys
 import click
 from src.logger import setup_logging, get_logger

@@ -11,6 +11,9 @@ Usage:
     python scripts/run_backtest.py --tickers TSLA NVDA --output reports/custom.html
 """
 
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import click
 from pathlib import Path
 from src.logger import setup_logging, get_logger
