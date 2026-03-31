@@ -1,0 +1,24 @@
+2026-03-31 23:14:55 | INFO     | __main__:main:32 | Fetching 8 tickers | 2019-01-01 → today | 1d
+2026-03-31 23:14:55 | INFO     | src.data.loader:fetch_all:60 | DataLoader.fetch_all | 8 tickers | 2019-01-01 → 2026-03-31 | interval=1d
+2026-03-31 23:14:59 | INFO     | src.data.fetcher:fetch:83 | TSLA: 1,820 bars | 2019-01-02 → 2026-03-30
+2026-03-31 23:14:59 | INFO     | src.data.store:save_bars:125 | Saved 1,801 bars for TSLA → bars_TSLA
+2026-03-31 23:14:59 | INFO     | src.data.fetcher:fetch:83 | NVDA: 1,820 bars | 2019-01-02 → 2026-03-30
+2026-03-31 23:14:59 | INFO     | src.data.store:save_bars:125 | Saved 1,801 bars for NVDA → bars_NVDA
+2026-03-31 23:15:00 | INFO     | src.data.fetcher:fetch:83 | META: 1,820 bars | 2019-01-02 → 2026-03-30
+2026-03-31 23:15:00 | INFO     | src.data.store:save_bars:125 | Saved 1,801 bars for META → bars_META
+2026-03-31 23:15:00 | INFO     | src.data.fetcher:fetch:83 | GOOGL: 1,820 bars | 2019-01-02 → 2026-03-30
+2026-03-31 23:15:01 | INFO     | src.data.store:save_bars:125 | Saved 1,801 bars for GOOGL → bars_GOOGL
+2026-03-31 23:15:01 | INFO     | src.data.fetcher:fetch:83 | AMD: 1,820 bars | 2019-01-02 → 2026-03-30
+2026-03-31 23:15:01 | INFO     | src.data.store:save_bars:125 | Saved 1,801 bars for AMD → bars_AMD
+2026-03-31 23:15:01 | INFO     | src.data.fetcher:fetch:83 | MSFT: 1,820 bars | 2019-01-02 → 2026-03-30
+2026-03-31 23:15:01 | INFO     | src.data.store:save_bars:125 | Saved 1,801 bars for MSFT → bars_MSFT
+2026-03-31 23:15:02 | INFO     | src.data.fetcher:fetch:83 | AMZN: 1,820 bars | 2019-01-02 → 2026-03-30
+2026-03-31 23:15:02 | INFO     | src.data.store:save_bars:125 | Saved 1,801 bars for AMZN → bars_AMZN
+2026-03-31 23:15:02 | INFO     | src.data.fetcher:fetch:83 | AAPL: 1,820 bars | 2019-01-02 → 2026-03-30
+2026-03-31 23:15:02 | INFO     | src.data.store:save_bars:125 | Saved 1,801 bars for AAPL → bars_AAPL
+2026-03-31 23:15:03 | SUCCESS  | __main__:main:37 | Done! 8/8 tickers loaded. Run 'python scripts/run_backtest.py' next.
+2026-03-31 23:29:34 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.6 | stop=1.0×ATR | target=1.5×ATR
+2026-03-31 23:29:34 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-03-31 23:29:34 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 8 tickers | meta_labeler=pass-through
+2026-03-31 23:29:34 | INFO     | __main__:main:35 | Scanning 8 tickers for signals...
+2026-03-31 23:29:34 | INFO     | __main__:main:41 | No actionable signals right now.
