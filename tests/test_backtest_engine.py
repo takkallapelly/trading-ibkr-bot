@@ -28,8 +28,8 @@ def make_trades(n_win=6, n_loss=4, avg_win=150.0, avg_loss=100.0) -> list[dict]:
     for i in range(n_loss):
         trades.append({
             "ticker": "TSLA", "side": "LONG",
-            "entry_time": f"2024-1{i+1}-01 10:00:00",
-            "exit_time":  f"2024-1{i+1}-02 14:00:00",
+            "entry_time": f"2024-01-{i+11} 10:00:00",
+            "exit_time":  f"2024-01-{i+11} 14:00:00",
             "entry_price": 200.0, "exit_price": 199.0,
             "qty": 100, "pnl": -avg_loss,
             "pnl_pct": -avg_loss/20000, "exit_reason": "STOP_LOSS",

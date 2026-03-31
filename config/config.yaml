@@ -15,14 +15,10 @@ data:
 # ── Tickers ───────────────────────────────────────────────────────────────────
 tickers:
   universe:
-    - TSLA
-    - NVDA
     - META
-    - GOOGL
-    - AMD
     - MSFT
-    - AMZN
     - AAPL
+    - NVDA
 
 # ── Signal engine ─────────────────────────────────────────────────────────────
 signals:
@@ -46,7 +42,10 @@ signals:
     weight: 0.20
 
   # Composite score threshold to open a position
-  min_signal_score: 0.60        # 0.0 – 1.0
+  min_signal_score: 0.65        # 0.0 – 1.0
+
+  # Only take long trades (buying) — tech stocks trend upward long-term
+  long_only: true
 
   # Market microstructure: avoid open/close turbulence (Harris)
   avoid_first_minutes: 15       # minutes after open
@@ -69,8 +68,8 @@ risk:
 
   # ATR-based stops
   atr_period: 14
-  stop_loss_atr_mult: 1.0       # stop = entry ± 1.0 × ATR
-  take_profit_atr_mult: 1.5     # target = entry ± 1.5 × ATR  (Sharpe-positive R:R)
+  stop_loss_atr_mult: 1.5       # stop = entry ± 1.0 × ATR
+  take_profit_atr_mult: 3.0     # target = entry ± 1.5 × ATR  (Sharpe-positive R:R)
 
   # Hard caps (Taleb: fat-tail protection)
   max_position_usd: 2500        # never more than $2,500 in one ticker
