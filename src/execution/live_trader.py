@@ -1,24 +1,16 @@
 """
 src/execution/live_trader.py
 ─────────────────────────────
-LiveTrader — the master coordinator for live trading.
+LiveTrader — master coordinator for live/paper trading.
+Now uses proper 5-minute intraday bars for signal scanning.
 
-Connects all phases together:
-  DataLoader (Phase 2) → SignalEngine (Phase 3) →
-  RiskManager (Phase 5) → IBKRClient (Phase 7) →
-  DataStore (Phase 2) → SelfLearner retrain (Phase 6)
-
-Main loop runs every 5 minutes during market hours:
-  1. Refresh latest 5-min bars from IBKR
-  2. Run signal scan across all tickers
-  3. For each signal → RiskManager approval
-  4. For each approved order → IBKRClient bracket order
-  5. Monitor open positions for stop/target hits
-  6. Log everything to database
-  7. Sunday: trigger ML retrain
-
-Safety: TRADING_MODE=paper by default.
-        Live orders require explicit mode=live + .env flag.
+Loop (every 5 minutes during market hours):
+  1. Refresh 5-min bars for all tickers
+  2. Compute intraday features (RSI, BB, EMA, ATR on 5-min bars)
+  3. Scan signals → RiskManager → IBKRClient bracket orders
+  4. Monitor open positions
+  5. Save equity snapshot
+  Sunday: retrain ML model
 """
 
 from __future__ import annotations
@@ -36,11 +28,11 @@ from src.execution.scheduler import (
 
 class LiveTrader:
     """
-    Master live trading coordinator.
+    Master live/paper trading coordinator with 5-min intraday scanning.
 
     Usage:
         trader = LiveTrader(mode="paper")
-        trader.start()   # blocks until KeyboardInterrupt
+        trader.start()   # blocks — press Ctrl+C to stop
         trader.stop()    # graceful shutdown
     """
 
@@ -50,78 +42,92 @@ class LiveTrader:
         self.mode    = mode
         self.is_live = mode.lower() == "live"
         self._running = False
-        self._lock    = threading.Lock()
 
         logger.info(
             f"LiveTrader initialising | mode={mode} | "
             f"tickers={TICKERS}"
         )
 
-        # ── Lazy imports (heavy — only load when actually trading) ────────────
-        self._loader   = None
-        self._engine   = None
-        self._risk     = None
-        self._store    = None
-        self._learner  = None
-        self._client   = None
-        self._order_mgr = None
+        # All components initialised lazily in start()
+        self._intraday  = None   # IntradayFetcher (5-min bars)
+        self._engine    = None   # StrategyEngine
+        self._risk      = None   # RiskManager
+        self._store     = None   # DataStore
+        self._learner   = None   # SelfLearner (ML)
+        self._client    = None   # IBKRClient
+        self._order_mgr = None   # OrderManager
+        self._alerts    = None   # AlertSystem
 
     # ── Public API ────────────────────────────────────────────────────────────
 
     def start(self) -> None:
-        """
-        Start the live trading loop. Blocks until stop() is called.
-        Call from run_live.py.
-        """
+        """Start the live trading loop. Blocks until stopped."""
         self._init_components()
 
         if self.is_live:
             if not self._connect_ibkr():
-                logger.error("Failed to connect to IBKR — aborting")
+                logger.error("IBKR connection failed — aborting")
                 return
         else:
-            logger.info("Paper mode — IBKR connection skipped")
+            logger.info("Paper mode — IBKR connection skipped (using yfinance)")
+
+        # Warm up 5-min bar history before entering loop
+        logger.info("Warming up intraday data (5-min bars)...")
+        self._intraday.warmup(days=5)
+
+        if not self._intraday.is_ready(min_bars=25):
+            logger.warning(
+                "Not enough intraday bars loaded — "
+                "signals may be unreliable until more bars accumulate"
+            )
 
         self._running = True
+        self._alerts.bot_started(self.mode)
         logger.success(f"LiveTrader started | mode={self.mode}")
 
         self._run_loop()
 
     def stop(self) -> None:
-        """Graceful shutdown — cancel all orders, disconnect."""
+        """Graceful shutdown."""
         logger.info("LiveTrader stopping...")
         self._running = False
 
         if self._client and self._client.is_connected():
-            if not self.is_live:
-                pass  # paper mode — no real orders
-            else:
+            if self.is_live:
                 logger.warning("Cancelling all open orders before disconnect")
                 self._client.cancel_all_orders()
                 time.sleep(1)
             self._client.disconnect()
+
+        if self._alerts:
+            self._alerts.bot_stopped()
 
         logger.info("LiveTrader stopped")
 
     # ── Main loop ─────────────────────────────────────────────────────────────
 
     def _run_loop(self) -> None:
-        """Main trading loop — runs every 5 minutes during market hours."""
-        last_retrain_date = None
+        """5-minute scanning loop."""
+        last_retrain_date  = None
+        last_summary_date  = None
+        scan_count         = 0
 
         while self._running:
             try:
                 status = market_status()
 
-                # ── Pre-market: data refresh ──────────────────────────────────
+                # ── Outside market hours ──────────────────────────────────────
                 if not status["is_open"]:
-                    logger.debug(
+                    mins = status["mins_to_open"]
+                    logger.info(
                         f"Market closed | {status['time_eastern']} | "
-                        f"next open in {status['mins_to_open']:.0f}min"
+                        + (f"opens in {mins:.0f} min" if mins > 0 else "checking...")
                     )
+
+                    # Daily reset at start of new day
                     self._daily_reset_if_needed()
 
-                    # Sunday: trigger ML retrain
+                    # Sunday ML retrain
                     today = date.today().isoformat()
                     if is_sunday() and last_retrain_date != today:
                         logger.info("Sunday — triggering ML retrain")
@@ -131,72 +137,118 @@ class LiveTrader:
                     time.sleep(60)
                     continue
 
-                # ── During market hours ───────────────────────────────────────
+                # ── Microstructure guard (Harris) ─────────────────────────────
                 if not status["is_tradable"]:
-                    logger.debug(
-                        f"Market open but not tradable | {status['time_eastern']}"
+                    logger.info(
+                        f"Market open but avoiding microstructure window | "
+                        f"{status['time_eastern']}"
                     )
                     time.sleep(30)
                     continue
 
-                # Refresh latest intraday bars
-                self._refresh_data()
+                # ── Refresh 5-min intraday bars ───────────────────────────────
+                scan_count += 1
+                logger.info(
+                    f"Scan #{scan_count} | {status['time_eastern']} | "
+                    f"open positions: {len(self._order_mgr.open_orders())}"
+                )
 
-                # Scan for signals
-                signals = self._scan_signals()
+                self._refresh_intraday()
 
-                # Process each signal through risk manager
+                if not self._intraday.is_ready(min_bars=25):
+                    logger.warning("Insufficient intraday bars — skipping scan")
+                    time.sleep(self.SCAN_INTERVAL_SECS)
+                    continue
+
+                # ── Signal scan on 5-min bars ─────────────────────────────────
+                signals = self._scan_intraday_signals()
+
+                # ── Process signals ───────────────────────────────────────────
                 for signal in signals:
                     self._process_signal(signal)
 
-                # Monitor open positions
+                # ── Monitor open positions ────────────────────────────────────
                 self._monitor_positions()
 
-                # Log equity snapshot
+                # ── Save equity snapshot ──────────────────────────────────────
                 self._save_equity_snapshot()
 
-                logger.debug(
-                    f"Scan complete | {status['time_eastern']} | "
-                    f"open={len(self._order_mgr.open_orders())} positions | "
-                    f"next scan in {self.SCAN_INTERVAL_SECS//60}min"
-                )
+                # ── End of day summary at 4pm ET ──────────────────────────────
+                today = date.today().isoformat()
+                if status["mins_to_close"] < 1 and last_summary_date != today:
+                    self._send_daily_summary()
+                    last_summary_date = today
 
                 time.sleep(self.SCAN_INTERVAL_SECS)
 
             except KeyboardInterrupt:
-                logger.info("Keyboard interrupt — stopping")
                 break
             except Exception as e:
                 logger.error(f"Loop error: {e}")
-                time.sleep(30)  # brief pause before retry
+                time.sleep(30)
 
-    # ── Trading logic ─────────────────────────────────────────────────────────
+    # ── Intraday signal scanning ───────────────────────────────────────────────
 
-    def _scan_signals(self) -> list:
-        """Scan all tickers for actionable signals."""
+    def _refresh_intraday(self) -> None:
+        """Fetch latest 5-min bars and recompute features."""
         try:
-            signals = self._engine.get_signals(loader=self._loader)
+            self._intraday.refresh_all(days=2)
+        except Exception as e:
+            logger.warning(f"Intraday refresh error: {e}")
+
+    def _scan_intraday_signals(self) -> list:
+        """
+        Scan all tickers using latest 5-min bars.
+        Uses intraday-calibrated thresholds (wider RSI, 5-min ATR).
+        """
+        try:
+            latest_bars = self._intraday.get_latest_all()
+
+            if not latest_bars:
+                logger.warning("No intraday bars available for scan")
+                return []
+
+            # Log current bar values for visibility
+            for ticker, bar in latest_bars.items():
+                rsi   = bar.get("rsi_2", 50)
+                score = bar.get("signal_score", 0)
+                close = bar.get("close", 0)
+                logger.debug(
+                    f"{ticker} | close=${close:.2f} | "
+                    f"rsi={rsi:.1f} | score={score:.2f}"
+                )
+
+            signals = self._engine.get_signals(bars=latest_bars)
+
+            if signals:
+                logger.info(
+                    f"Actionable signals: "
+                    + ", ".join(
+                        f"{s.ticker}({s.direction.value} score={s.score:.2f} "
+                        f"rsi={s.rsi:.1f})"
+                        for s in signals
+                    )
+                )
+            else:
+                logger.info("No actionable signals this scan")
+
             return signals
+
         except Exception as e:
             logger.error(f"Signal scan error: {e}")
             return []
 
     def _process_signal(self, signal) -> None:
-        """
-        Process one signal through the full pipeline:
-        RiskManager → MetaLabeler → IBKRClient
-        """
+        """Process one signal through risk manager → order placement."""
         ticker = signal.ticker
 
-        # Skip if already have an open position in this ticker
         if self._order_mgr.has_open_position(ticker):
-            logger.debug(f"{ticker}: already have open position — skipping")
+            logger.debug(f"{ticker}: position already open — skipping")
             return
 
-        # Risk approval
-        daily_pnl    = self._store.daily_pnl_today()
-        open_pos     = self._order_mgr.open_positions_for_risk()
-        order        = self._risk.approve_entry(
+        daily_pnl = self._store.daily_pnl_today()
+        open_pos  = self._order_mgr.open_positions_for_risk()
+        order     = self._risk.approve_entry(
             signal,
             daily_pnl=daily_pnl,
             open_positions=open_pos,
@@ -206,11 +258,10 @@ class LiveTrader:
             logger.debug(f"{ticker}: risk rejected — {order.rejection_reason}")
             return
 
-        # Place the order
         self._place_order(order)
 
     def _place_order(self, order) -> None:
-        """Place a bracket order via IBKR (or simulate in paper mode)."""
+        """Place bracket order via IBKR or simulate in paper mode."""
         from src.execution.order_manager import ManagedOrder, OrderState
 
         signal = order.signal
@@ -230,38 +281,39 @@ class LiveTrader:
         if self.is_live and self._client and self._client.is_connected():
             try:
                 parent_id, stop_id, target_id = self._client.place_bracket_order(
-                    ticker   = ticker,
-                    qty      = order.shares,
-                    entry    = order.entry_price,
-                    stop     = order.stop_price,
-                    target   = order.target_price,
-                    side     = "BUY" if signal.direction.value == "LONG" else "SELL",
+                    ticker  = ticker,
+                    qty     = order.shares,
+                    entry   = order.entry_price,
+                    stop    = order.stop_price,
+                    target  = order.target_price,
+                    side    = "BUY" if signal.direction.value == "LONG" else "SELL",
                 )
                 managed.parent_id = parent_id
                 managed.stop_id   = stop_id
                 managed.target_id = target_id
                 managed.transition(OrderState.SUBMITTED)
             except Exception as e:
-                logger.error(f"Order placement failed for {ticker}: {e}")
+                logger.error(f"Order placement failed {ticker}: {e}")
                 return
         else:
-            # Paper mode — simulate immediate fill at entry price
+            # Paper mode — simulate immediate fill
             managed.parent_id = self._order_mgr.next_paper_id()
             managed.stop_id   = managed.parent_id + 1
             managed.target_id = managed.parent_id + 2
             managed.transition(OrderState.SUBMITTED)
             managed.transition(
                 OrderState.FILLED,
-                fill_price=order.entry_price,
-                fill_time=datetime.utcnow().isoformat(),
+                fill_price = order.entry_price,
+                fill_time  = datetime.utcnow().isoformat(),
             )
             logger.info(
-                f"[PAPER] {ticker} {signal.direction.value} {order.shares}sh "
-                f"@ ${order.entry_price:.2f} | "
-                f"stop=${order.stop_price:.2f} target=${order.target_price:.2f}"
+                f"📋 [PAPER] {ticker} {signal.direction.value} "
+                f"{order.shares}sh @ ${order.entry_price:.2f} | "
+                f"stop=${order.stop_price:.2f} "
+                f"target=${order.target_price:.2f} | "
+                f"risk=${order.risk_usd:.0f}"
             )
 
-        # Register and save to DB
         self._order_mgr.register(managed)
         self._risk.open_position(order)
 
@@ -278,19 +330,21 @@ class LiveTrader:
         })
         managed.db_trade_id = trade_id
 
-    def _monitor_positions(self) -> None:
-        """Check open positions against latest prices (paper mode)."""
-        if self.is_live:
-            return  # IBKR handles stop/target via bracket orders
+        # Telegram alert
+        self._alerts.trade_opened(signal, order)
 
-        # Paper mode: check if stop or target hit on latest bar
+    def _monitor_positions(self) -> None:
+        """Check open positions against latest 5-min bar (paper mode)."""
+        if self.is_live:
+            return  # IBKR handles via bracket orders
+
         from src.execution.order_manager import OrderState
         for order in self._order_mgr.open_orders():
             if order.state != OrderState.FILLED:
                 continue
 
             ticker = order.ticker
-            bar    = self._loader.get_latest(ticker)
+            bar    = self._intraday.get_latest(ticker)
             if bar is None:
                 continue
 
@@ -314,15 +368,15 @@ class LiveTrader:
             if exit_price:
                 direction = 1 if order.side == "LONG" else -1
                 pnl = direction * (exit_price - order.fill_price) * order.qty
+
                 order.transition(
                     OrderState.CLOSED,
-                    exit_price=exit_price,
-                    exit_time=datetime.utcnow().isoformat(),
-                    exit_reason=exit_reason,
-                    pnl=round(pnl, 2),
+                    exit_price  = exit_price,
+                    exit_time   = datetime.utcnow().isoformat(),
+                    exit_reason = exit_reason,
+                    pnl         = round(pnl, 2),
                 )
 
-                # Update DB
                 if hasattr(order, "db_trade_id"):
                     self._store.update_trade(order.db_trade_id, {
                         "exit_time":  order.exit_time,
@@ -332,51 +386,69 @@ class LiveTrader:
                         "exit_reason":exit_reason,
                     })
 
-                # Update risk manager
                 self._risk.record_trade_result(order.to_trade_dict())
                 self._risk.close_position(ticker)
 
+                emoji = "✅" if pnl >= 0 else "❌"
                 logger.info(
-                    f"[PAPER] {ticker} CLOSED | {exit_reason} | "
-                    f"pnl=${pnl:.2f}"
+                    f"{emoji} [PAPER] {ticker} CLOSED | "
+                    f"{exit_reason} | pnl=${pnl:.2f}"
+                )
+                self._alerts.trade_closed(
+                    ticker=ticker, pnl=pnl,
+                    exit_reason=exit_reason,
+                    entry_price=order.fill_price,
+                    exit_price=exit_price,
+                    qty=order.qty,
                 )
 
     # ── Infrastructure ────────────────────────────────────────────────────────
 
     def _init_components(self) -> None:
-        """Lazy-load all heavy components."""
-        from src.data.loader import DataLoader
+        from src.data.intraday import IntradayFetcher, _intraday_cfg
         from src.strategy.engine import StrategyEngine
         from src.risk.manager import RiskManager
         from src.data.store import DataStore
         from src.ml.learner import SelfLearner
         from src.execution.order_manager import OrderManager
+        from src.dashboard.alerts import AlertSystem
 
-        self._loader   = DataLoader(tickers=TICKERS, interval="5m")
-        self._engine   = StrategyEngine(tickers=TICKERS)
-        self._risk     = RiskManager(capital=settings.TOTAL_CAPITAL)
-        self._store    = DataStore()
-        self._learner  = SelfLearner()
+        intraday_config = _intraday_cfg()
+
+        self._intraday  = IntradayFetcher(
+            tickers  = TICKERS,
+            use_ibkr = self.is_live,
+            ibkr_client = self._client,
+        )
+        self._engine    = StrategyEngine(tickers=TICKERS, config=intraday_config)
+        self._risk      = RiskManager(capital=settings.TOTAL_CAPITAL)
+        self._store     = DataStore()
+        self._learner   = SelfLearner()
         self._order_mgr = OrderManager()
+        self._alerts    = AlertSystem()
 
-        logger.info("All components initialised")
+        logger.info(
+            f"Components ready | intraday=5-min | "
+            f"rsi_oversold=15 | rsi_overbought=85 | "
+            f"stop=1.5×ATR | target=3.0×ATR"
+        )
 
     def _connect_ibkr(self) -> bool:
         from src.execution.ibkr_client import IBKRClient
         self._client = IBKRClient()
-
-        # Register fill callback
-        self._client.on("fill", self._on_ibkr_fill)
+        self._client.on("fill",         self._on_ibkr_fill)
         self._client.on("order_status", self._on_order_status)
+        connected = self._client.connect_and_run()
+        if connected:
+            # Update intraday fetcher with connected client
+            self._intraday.client   = self._client
+            self._intraday.use_ibkr = True
+        return connected
 
-        return self._client.connect_and_run()
-
-    def _on_ibkr_fill(self, ticker, side, qty, price, exec_id, **_) -> None:
-        """Called when IBKR reports a fill."""
+    def _on_ibkr_fill(self, ticker, side, qty, price, **_) -> None:
         logger.info(f"IBKR fill | {ticker} {side} {qty}sh @ ${price:.2f}")
 
     def _on_order_status(self, order_id, status, filled, avg_fill, **_) -> None:
-        """Called when order status changes."""
         if status == "Filled":
             order = self._order_mgr.on_fill(order_id, avg_fill)
             if order:
@@ -385,45 +457,54 @@ class LiveTrader:
                     self._risk.record_trade_result(order.to_trade_dict())
                     self._risk.close_position(order.ticker)
 
-    def _refresh_data(self) -> None:
-        """Refresh latest bars for all tickers."""
-        try:
-            self._loader.refresh_all(days=2)
-        except Exception as e:
-            logger.warning(f"Data refresh error: {e}")
-
     def _retrain_ml(self) -> None:
-        """Trigger ML retrain."""
         try:
             result = self._learner.retrain()
             if result.get("status") == "success":
-                logger.success(
-                    f"ML retrain complete | accuracy={result['accuracy']:.1%}"
-                )
+                acc = result["accuracy"]
+                n   = result["n_trades"]
+                logger.success(f"ML retrain | accuracy={acc:.1%} | n={n}")
+                self._alerts.ml_retrained(acc, n)
         except Exception as e:
             logger.error(f"ML retrain failed: {e}")
 
     def _daily_reset_if_needed(self) -> None:
-        """Reset daily circuit breakers at market open."""
         now = datetime.now()
         if now.hour == 9 and now.minute < 10:
             self._risk.reset_daily()
+            logger.info("Daily circuit breakers reset")
 
     def _save_equity_snapshot(self) -> None:
-        """Save daily equity curve point."""
         try:
             daily_pnl = self._store.daily_pnl_today()
             equity    = settings.TOTAL_CAPITAL + daily_pnl
             open_n    = len(self._order_mgr.open_orders())
             self._store.save_equity_snapshot(equity, daily_pnl, open_n)
         except Exception as e:
-            logger.debug(f"Equity snapshot error: {e}")
+            logger.debug(f"Equity snapshot: {e}")
+
+    def _send_daily_summary(self) -> None:
+        try:
+            daily_pnl    = self._store.daily_pnl_today()
+            open_trades  = self._store.open_trades()
+            trades_today = self._store.load_trades(closed_only=True)
+            n_today      = len(trades_today)
+            wr           = self._risk._trade_stats()["win_rate"]
+            equity       = settings.TOTAL_CAPITAL + daily_pnl
+            open_tickers = open_trades["ticker"].tolist() if not open_trades.empty else []
+
+            self._alerts.daily_summary(
+                daily_pnl=daily_pnl, total_equity=equity,
+                n_trades=n_today, win_rate=wr,
+                open_positions=open_tickers,
+            )
+        except Exception as e:
+            logger.debug(f"Daily summary error: {e}")
 
 
 # Monkey-patch OrderManager with paper ID counter
 def _next_paper_id(self):
-    if not hasattr(self, "_paper_id"):
-        self._paper_id = 1000
+    if not hasattr(self, "_paper_id"): self._paper_id = 1000
     self._paper_id += 3
     return self._paper_id
 

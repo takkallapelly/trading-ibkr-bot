@@ -85,7 +85,7 @@ def check_min_score(
 
 def check_min_atr(
     bar: pd.Series,
-    min_atr_pct: float = 0.005,  # 0.5% minimum daily range
+    min_atr_pct: float = 0.005,
 ) -> tuple[bool, str]:
     """
     Skip stocks that aren't moving enough today.
@@ -206,7 +206,7 @@ def apply_all_rules(
             score,
             min_score = sig.get("min_signal_score", 0.60),
         ),
-        lambda: check_min_atr(bar),
+        lambda: check_min_atr(bar, min_atr_pct=risk.get("min_atr_pct", 0.005)),
         lambda: check_volume(bar),
         lambda: check_direction_consistency(bar, direction),
         lambda: check_risk_reward(

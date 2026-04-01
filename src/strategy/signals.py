@@ -74,10 +74,14 @@ class SignalEngine:
             return flat_signal(ticker, "invalid bar data", bar.name)
 
         # ── 2. Determine direction from score sign ────────────────────────────
+        long_only = self._sig.get("long_only", False)
+
         if score >= self.min_score:
             direction = Direction.LONG
-        elif score <= -self.min_score:
+        elif score <= -self.min_score and not long_only:
             direction = Direction.SHORT
+        elif score <= -self.min_score and long_only:
+            return flat_signal(ticker, "long_only mode — short blocked", bar.name)
         else:
             return flat_signal(
                 ticker,
