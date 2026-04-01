@@ -19,6 +19,12 @@ tickers:
     - MSFT
     - AAPL
     - NVDA
+    - NFLX
+    - COST
+    - HD
+    - CRM
+    - ORCL
+    - GS
 
 # ── Signal engine ─────────────────────────────────────────────────────────────
 signals:

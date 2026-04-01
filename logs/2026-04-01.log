@@ -36,3 +36,84 @@
 2026-04-01 09:20:07 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
 2026-04-01 09:20:07 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
 2026-04-01 09:20:07 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 4 tickers | meta_labeler=pass-through
+2026-04-01 11:18:11 | INFO     | __main__:main:32 | Fetching 12 tickers | 2019-01-01 → today | 1d
+2026-04-01 11:18:11 | INFO     | src.data.loader:fetch_all:60 | DataLoader.fetch_all | 12 tickers | 2019-01-01 → 2026-04-01 | interval=1d
+2026-04-01 11:18:12 | INFO     | src.data.fetcher:fetch:83 | JPM: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:12 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for JPM → bars_JPM
+2026-04-01 11:18:13 | INFO     | src.data.fetcher:fetch:83 | GS: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:13 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for GS → bars_GS
+2026-04-01 11:18:14 | INFO     | src.data.fetcher:fetch:83 | BAC: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:14 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for BAC → bars_BAC
+2026-04-01 11:18:14 | INFO     | src.data.fetcher:fetch:83 | JNJ: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:15 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for JNJ → bars_JNJ
+2026-04-01 11:18:15 | INFO     | src.data.fetcher:fetch:83 | UNH: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:15 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for UNH → bars_UNH
+2026-04-01 11:18:16 | INFO     | src.data.fetcher:fetch:83 | LLY: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:16 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for LLY → bars_LLY
+2026-04-01 11:18:16 | INFO     | src.data.fetcher:fetch:83 | COST: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:17 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for COST → bars_COST
+2026-04-01 11:18:17 | INFO     | src.data.fetcher:fetch:83 | WMT: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:17 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for WMT → bars_WMT
+2026-04-01 11:18:18 | INFO     | src.data.fetcher:fetch:83 | HD: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:18 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for HD → bars_HD
+2026-04-01 11:18:18 | INFO     | src.data.fetcher:fetch:83 | CRM: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:18 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for CRM → bars_CRM
+2026-04-01 11:18:19 | INFO     | src.data.fetcher:fetch:83 | ORCL: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:19 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for ORCL → bars_ORCL
+2026-04-01 11:18:19 | INFO     | src.data.fetcher:fetch:83 | NFLX: 1,821 bars | 2019-01-02 → 2026-03-31
+2026-04-01 11:18:19 | INFO     | src.data.store:save_bars:125 | Saved 1,802 bars for NFLX → bars_NFLX
+2026-04-01 11:18:20 | SUCCESS  | __main__:main:37 | Done! 12/12 tickers loaded. Run 'python scripts/run_backtest.py' next.
+2026-04-01 11:19:11 | INFO     | __main__:main:32 | Starting backtest | 2020-01-01 → 2024-12-31 | tickers=['JPM', 'GS', 'BAC', 'JNJ', 'UNH', 'LLY', 'COST', 'WMT', 'HD', 'CRM', 'ORCL', 'NFLX']
+2026-04-01 11:19:12 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 11:19:12 | INFO     | src.backtest.engine:run:40 | Backtest starting | 2020-01-01 → 2024-12-31 | 12 tickers | 6-fold walk-forward
+2026-04-01 11:19:13 | INFO     | src.backtest.engine:run:46 | Backtesting JPM...
+2026-04-01 11:19:13 | INFO     | src.backtest.engine:run:53 | JPM: 31 trades completed
+2026-04-01 11:19:13 | INFO     | src.backtest.engine:run:46 | Backtesting GS...
+2026-04-01 11:19:13 | INFO     | src.backtest.engine:run:53 | GS: 31 trades completed
+2026-04-01 11:19:13 | INFO     | src.backtest.engine:run:46 | Backtesting BAC...
+2026-04-01 11:19:14 | INFO     | src.backtest.engine:run:53 | BAC: 29 trades completed
+2026-04-01 11:19:14 | INFO     | src.backtest.engine:run:46 | Backtesting JNJ...
+2026-04-01 11:19:14 | INFO     | src.backtest.engine:run:53 | JNJ: 28 trades completed
+2026-04-01 11:19:14 | INFO     | src.backtest.engine:run:46 | Backtesting UNH...
+2026-04-01 11:19:14 | INFO     | src.backtest.engine:run:53 | UNH: 31 trades completed
+2026-04-01 11:19:14 | INFO     | src.backtest.engine:run:46 | Backtesting LLY...
+2026-04-01 11:19:14 | INFO     | src.backtest.engine:run:53 | LLY: 27 trades completed
+2026-04-01 11:19:14 | INFO     | src.backtest.engine:run:46 | Backtesting COST...
+2026-04-01 11:19:15 | INFO     | src.backtest.engine:run:53 | COST: 31 trades completed
+2026-04-01 11:19:15 | INFO     | src.backtest.engine:run:46 | Backtesting WMT...
+2026-04-01 11:19:15 | INFO     | src.backtest.engine:run:53 | WMT: 26 trades completed
+2026-04-01 11:19:15 | INFO     | src.backtest.engine:run:46 | Backtesting HD...
+2026-04-01 11:19:15 | INFO     | src.backtest.engine:run:53 | HD: 25 trades completed
+2026-04-01 11:19:15 | INFO     | src.backtest.engine:run:46 | Backtesting CRM...
+2026-04-01 11:19:16 | INFO     | src.backtest.engine:run:53 | CRM: 30 trades completed
+2026-04-01 11:19:16 | INFO     | src.backtest.engine:run:46 | Backtesting ORCL...
+2026-04-01 11:19:16 | INFO     | src.backtest.engine:run:53 | ORCL: 28 trades completed
+2026-04-01 11:19:16 | INFO     | src.backtest.engine:run:46 | Backtesting NFLX...
+2026-04-01 11:19:16 | INFO     | src.backtest.engine:run:53 | NFLX: 33 trades completed
+2026-04-01 11:19:16 | SUCCESS  | src.backtest.engine:to_html:86 | HTML report saved → C:\IBKR Bot\trading-bot\reports\backtest_2020-01-01_2024-12-31.html
+2026-04-01 11:19:16 | SUCCESS  | __main__:main:49 | Backtest complete | Sharpe=2.01 | CAGR=15.2% | MaxDD=-6.4% | Report → C:\IBKR Bot\trading-bot\reports\backtest_2020-01-01_2024-12-31.html
+2026-04-01 11:20:48 | INFO     | __main__:main:32 | Starting backtest | 2020-01-01 → 2024-12-31 | tickers=['META', 'MSFT', 'AAPL', 'NVDA', 'NFLX', 'COST', 'HD', 'CRM', 'ORCL', 'GS']
+2026-04-01 11:20:49 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 11:20:49 | INFO     | src.backtest.engine:run:40 | Backtest starting | 2020-01-01 → 2024-12-31 | 10 tickers | 6-fold walk-forward
+2026-04-01 11:20:50 | INFO     | src.backtest.engine:run:46 | Backtesting META...
+2026-04-01 11:20:50 | INFO     | src.backtest.engine:run:53 | META: 34 trades completed
+2026-04-01 11:20:50 | INFO     | src.backtest.engine:run:46 | Backtesting MSFT...
+2026-04-01 11:20:50 | INFO     | src.backtest.engine:run:53 | MSFT: 29 trades completed
+2026-04-01 11:20:50 | INFO     | src.backtest.engine:run:46 | Backtesting AAPL...
+2026-04-01 11:20:51 | INFO     | src.backtest.engine:run:53 | AAPL: 31 trades completed
+2026-04-01 11:20:51 | INFO     | src.backtest.engine:run:46 | Backtesting NVDA...
+2026-04-01 11:20:51 | INFO     | src.backtest.engine:run:53 | NVDA: 32 trades completed
+2026-04-01 11:20:51 | INFO     | src.backtest.engine:run:46 | Backtesting NFLX...
+2026-04-01 11:20:51 | INFO     | src.backtest.engine:run:53 | NFLX: 33 trades completed
+2026-04-01 11:20:51 | INFO     | src.backtest.engine:run:46 | Backtesting COST...
+2026-04-01 11:20:52 | INFO     | src.backtest.engine:run:53 | COST: 31 trades completed
+2026-04-01 11:20:52 | INFO     | src.backtest.engine:run:46 | Backtesting HD...
+2026-04-01 11:20:52 | INFO     | src.backtest.engine:run:53 | HD: 25 trades completed
+2026-04-01 11:20:52 | INFO     | src.backtest.engine:run:46 | Backtesting CRM...
+2026-04-01 11:20:52 | INFO     | src.backtest.engine:run:53 | CRM: 30 trades completed
+2026-04-01 11:20:52 | INFO     | src.backtest.engine:run:46 | Backtesting ORCL...
+2026-04-01 11:20:52 | INFO     | src.backtest.engine:run:53 | ORCL: 28 trades completed
+2026-04-01 11:20:52 | INFO     | src.backtest.engine:run:46 | Backtesting GS...
+2026-04-01 11:20:53 | INFO     | src.backtest.engine:run:53 | GS: 31 trades completed
+2026-04-01 11:20:53 | SUCCESS  | src.backtest.engine:to_html:86 | HTML report saved → C:\IBKR Bot\trading-bot\reports\backtest_2020-01-01_2024-12-31.html
+2026-04-01 11:20:53 | SUCCESS  | __main__:main:49 | Backtest complete | Sharpe=3.52 | CAGR=30.9% | MaxDD=-7.9% | Report → C:\IBKR Bot\trading-bot\reports\backtest_2020-01-01_2024-12-31.html
