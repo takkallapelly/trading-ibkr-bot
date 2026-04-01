@@ -1,1 +1,1 @@
-"""src/ml subpackage"""
+"""src/ml — self-improving ML layer (Phase 6)"""
