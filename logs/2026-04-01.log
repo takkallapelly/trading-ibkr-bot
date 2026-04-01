@@ -126,3 +126,58 @@
 2026-04-01 11:22:23 | INFO     | src.data.loader:fetch_all:70 | ORCL: 1,802 bars in DB — skipping download
 2026-04-01 11:22:24 | INFO     | src.data.loader:fetch_all:70 | GS: 1,802 bars in DB — skipping download
 2026-04-01 11:22:24 | SUCCESS  | __main__:main:37 | Done! 6/6 tickers loaded. Run 'python scripts/run_backtest.py' next.
+2026-04-01 13:49:12 | INFO     | __main__:main:49 | Starting bot | mode=paper | host=127.0.0.1:7497 | capital=$25,000
+2026-04-01 13:49:12 | INFO     | src.config:validate:94 | Config OK | mode=paper | capital=$25,000
+2026-04-01 13:49:12 | INFO     | src.execution.live_trader:__init__:46 | LiveTrader initialising | mode=paper | tickers=['META', 'MSFT', 'AAPL', 'NVDA', 'NFLX', 'COST', 'HD', 'CRM', 'ORCL', 'GS']
+2026-04-01 13:49:24 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:49:24 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:49:24 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
+2026-04-01 13:49:24 | INFO     | src.risk.manager:__init__:66 | RiskManager ready | capital=$25,000 | kelly=0.5 | max_pos=$2,500
+2026-04-01 13:49:24 | INFO     | src.ml.learner:_try_load_latest:180 | SelfLearner: no model yet — needs 30 trades
+2026-04-01 13:49:24 | INFO     | src.execution.live_trader:_init_components:430 | Components ready | intraday=5-min | rsi_oversold=15 | rsi_overbought=85 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:49:24 | INFO     | src.execution.live_trader:start:72 | Paper mode — IBKR connection skipped (using yfinance)
+2026-04-01 13:49:24 | INFO     | src.execution.live_trader:start:75 | Warming up intraday data (5-min bars)...
+2026-04-01 13:49:24 | INFO     | src.data.intraday:warmup:70 | IntradayFetcher warming up | 10 tickers | source=yfinance | 5 days
+2026-04-01 13:49:27 | INFO     | src.data.intraday:warmup:80 | META: 215 5-min bars loaded | 2026-03-27 15:05 → 2026-03-31 19:55
+2026-04-01 13:49:28 | INFO     | src.data.intraday:warmup:80 | MSFT: 215 5-min bars loaded | 2026-03-27 15:05 → 2026-03-31 19:55
+2026-04-01 13:49:28 | INFO     | src.data.intraday:warmup:80 | AAPL: 215 5-min bars loaded | 2026-03-27 15:05 → 2026-03-31 19:55
+2026-04-01 13:49:29 | INFO     | src.data.intraday:warmup:80 | NVDA: 215 5-min bars loaded | 2026-03-27 15:05 → 2026-03-31 19:55
+2026-04-01 13:49:30 | INFO     | src.data.intraday:warmup:80 | NFLX: 215 5-min bars loaded | 2026-03-27 15:05 → 2026-03-31 19:55
+2026-04-01 13:49:30 | INFO     | src.data.intraday:warmup:80 | COST: 215 5-min bars loaded | 2026-03-27 15:05 → 2026-03-31 19:55
+2026-04-01 13:49:31 | INFO     | src.data.intraday:warmup:80 | HD: 215 5-min bars loaded | 2026-03-27 15:05 → 2026-03-31 19:55
+2026-04-01 13:49:32 | INFO     | src.data.intraday:warmup:80 | CRM: 215 5-min bars loaded | 2026-03-27 15:05 → 2026-03-31 19:55
+2026-04-01 13:49:32 | INFO     | src.data.intraday:warmup:80 | ORCL: 215 5-min bars loaded | 2026-03-27 15:05 → 2026-03-31 19:55
+2026-04-01 13:49:33 | INFO     | src.data.intraday:warmup:80 | GS: 215 5-min bars loaded | 2026-03-27 15:05 → 2026-03-31 19:55
+2026-04-01 13:49:34 | SUCCESS  | src.execution.live_trader:start:86 | LiveTrader started | mode=paper
+2026-04-01 13:49:34 | INFO     | src.execution.live_trader:_run_loop:122 | Market closed | 07:49:34 ET | opens in 100 min
+2026-04-01 13:50:24 | INFO     | __main__:main:31 | Dashboard starting | http://0.0.0.0:5000
+2026-04-01 13:52:50 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:52:50 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:52:50 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
+2026-04-01 13:53:20 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:53:20 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:53:20 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
+2026-04-01 13:53:50 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:53:50 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:53:50 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
+2026-04-01 13:54:20 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:54:20 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:54:20 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
+2026-04-01 13:54:50 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:54:50 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:54:50 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
+2026-04-01 13:55:20 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:55:20 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:55:20 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
+2026-04-01 13:55:50 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:55:50 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:55:50 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
+2026-04-01 13:56:20 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:56:20 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:56:20 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
+2026-04-01 13:56:54 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:56:54 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:56:54 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
+2026-04-01 13:57:54 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 13:57:54 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-01 13:57:54 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
