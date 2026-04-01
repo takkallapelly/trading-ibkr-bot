@@ -1,0 +1,13 @@
+2026-04-01 08:36:57 | INFO     | __main__:main:32 | Starting backtest | 2020-01-01 → 2024-12-31 | tickers=['META', 'MSFT', 'AAPL', 'NVDA']
+2026-04-01 08:37:01 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-01 08:37:01 | INFO     | src.backtest.engine:run:40 | Backtest starting | 2020-01-01 → 2024-12-31 | 4 tickers | 6-fold walk-forward
+2026-04-01 08:37:02 | INFO     | src.backtest.engine:run:46 | Backtesting META...
+2026-04-01 08:37:05 | INFO     | src.backtest.engine:run:53 | META: 34 trades completed
+2026-04-01 08:37:05 | INFO     | src.backtest.engine:run:46 | Backtesting MSFT...
+2026-04-01 08:37:06 | INFO     | src.backtest.engine:run:53 | MSFT: 29 trades completed
+2026-04-01 08:37:06 | INFO     | src.backtest.engine:run:46 | Backtesting AAPL...
+2026-04-01 08:37:06 | INFO     | src.backtest.engine:run:53 | AAPL: 31 trades completed
+2026-04-01 08:37:06 | INFO     | src.backtest.engine:run:46 | Backtesting NVDA...
+2026-04-01 08:37:06 | INFO     | src.backtest.engine:run:53 | NVDA: 32 trades completed
+2026-04-01 08:37:06 | SUCCESS  | src.backtest.engine:to_html:86 | HTML report saved → C:\IBKR Bot\trading-bot\reports\backtest_2020-01-01_2024-12-31.html
+2026-04-01 08:37:06 | SUCCESS  | __main__:main:49 | Backtest complete | Sharpe=3.05 | CAGR=32.8% | MaxDD=-6.2% | Report → C:\IBKR Bot\trading-bot\reports\backtest_2020-01-01_2024-12-31.html

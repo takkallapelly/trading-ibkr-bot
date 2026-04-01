@@ -91,15 +91,29 @@ class TradeSimulator:
 
                 # In backtesting skip the microstructure time guard
                 # (daily bars have no intraday timestamp issue)
+                long_only = self.engine.cfg.get("signals", {}).get("long_only", False)
                 if (signal.direction != Direction.FLAT
                         and signal.score >= self.engine.min_score
-                        and signal.stop_price > 0):
+                        and signal.stop_price > 0
+                        and not (long_only and signal.direction.value == "SHORT")):
 
                     # Fill at next bar's open + slippage
                     fill_price = self._apply_slippage(
                         next_bar["open"], signal.direction
                     )
-                    qty = max(1, int(self.position_size_usd / fill_price))
+
+                    # Kelly-based position sizing from running trade history
+                    from src.risk.kelly import KellySizer
+                    completed = [t for t in trades if t.get("pnl") is not None]
+                    wins   = [t["pnl"] for t in completed if t["pnl"] > 0]
+                    losses = [t["pnl"] for t in completed if t["pnl"] < 0]
+                    wr  = len(wins)/len(completed) if completed else 0.44
+                    aw  = sum(wins)/len(wins)       if wins   else 150.0
+                    al  = abs(sum(losses)/len(losses)) if losses else 100.0
+                    sizer   = KellySizer(capital=25000.0, kelly_fraction=0.5,
+                                         max_position_usd=self.position_size_usd)
+                    pos_usd = sizer.position_size_usd(wr, aw, al, len(completed))
+                    qty     = max(1, int(pos_usd / fill_price))
                     cost = qty * self.commission
 
                     position = {
