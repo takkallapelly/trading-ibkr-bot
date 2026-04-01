@@ -53,9 +53,9 @@ class TestMicrostructureGuard:
         assert self._is_tradable_time(time(15, 45))
 
 class TestSignalEngine:
-    def test_signal_engine_raises_not_implemented_before_phase3(self):
+     def test_signal_engine_is_implemented(self):
         from src.strategy.signals import SignalEngine
-        with pytest.raises(NotImplementedError):
-            SignalEngine()
+        engine = SignalEngine()
+        assert engine is not None
 
 

@@ -179,7 +179,7 @@ class TestSignalEngine:
         assert signal.direction.value == "LONG"
         assert signal.is_actionable
 
-    def test_strong_short_signal_actionable(self):
+    def test_strong_short_signal_blocked_in_long_only(self):
         from src.strategy.signals import SignalEngine
         engine = SignalEngine()
         bar = make_bar(
@@ -188,8 +188,7 @@ class TestSignalEngine:
             signal_score=-0.80,
         )
         signal = engine.evaluate("TSLA", bar)
-        assert signal.direction.value == "SHORT"
-        assert signal.is_actionable
+        assert not signal.is_actionable
 
     def test_weak_signal_flat(self):
         from src.strategy.signals import SignalEngine
@@ -218,17 +217,6 @@ class TestSignalEngine:
         bar = make_bar(close=200.0, atr=2.0, signal_score=0.80)
         signal = engine.evaluate("TSLA", bar)
         assert signal.target_price > signal.entry_price
-
-    def test_stop_above_entry_for_short(self):
-        from src.strategy.signals import SignalEngine
-        engine = SignalEngine()
-        bar = make_bar(
-            close=200.0, atr=2.0,
-            rsi_signal=-1.0, bb_signal=-1.0, ema_signal=-1.0,
-            signal_score=-0.80,
-        )
-        signal = engine.evaluate("TSLA", bar)
-        assert signal.stop_price > signal.entry_price
 
     def test_risk_reward_at_least_1(self):
         from src.strategy.signals import SignalEngine

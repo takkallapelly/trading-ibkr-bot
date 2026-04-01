@@ -102,7 +102,4 @@ class TestCircuitBreakers:
 class TestRiskManager:
     """Smoke test for the Phase 5 class import."""
 
-    def test_risk_manager_raises_not_implemented_before_phase5(self):
-        from src.risk.manager import RiskManager
-        with pytest.raises(NotImplementedError):
-            RiskManager()
+

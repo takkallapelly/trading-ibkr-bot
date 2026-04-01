@@ -125,7 +125,4 @@ class TestPurgedKFold:
 class TestBacktester:
     """Smoke test for Phase 4 class."""
 
-    def test_backtester_raises_not_implemented_before_phase4(self):
-        from src.backtest.engine import Backtester
-        with pytest.raises(NotImplementedError):
-            Backtester()
+

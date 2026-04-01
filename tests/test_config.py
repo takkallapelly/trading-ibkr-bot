@@ -46,7 +46,7 @@ class TestYamlConfig:
         assert len(TICKERS) > 0
 
     def test_expected_tickers_present(self):
-        for ticker in ["TSLA", "NVDA", "AAPL"]:
+        for ticker in ["META", "MSFT", "AAPL"]:
             assert ticker in TICKERS
 
     def test_rsi_period_in_cfg(self):
