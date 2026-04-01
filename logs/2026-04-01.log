@@ -117,3 +117,12 @@
 2026-04-01 11:20:53 | INFO     | src.backtest.engine:run:53 | GS: 31 trades completed
 2026-04-01 11:20:53 | SUCCESS  | src.backtest.engine:to_html:86 | HTML report saved → C:\IBKR Bot\trading-bot\reports\backtest_2020-01-01_2024-12-31.html
 2026-04-01 11:20:53 | SUCCESS  | __main__:main:49 | Backtest complete | Sharpe=3.52 | CAGR=30.9% | MaxDD=-7.9% | Report → C:\IBKR Bot\trading-bot\reports\backtest_2020-01-01_2024-12-31.html
+2026-04-01 11:22:23 | INFO     | __main__:main:32 | Fetching 6 tickers | 2019-01-01 → today | 5m
+2026-04-01 11:22:23 | INFO     | src.data.loader:fetch_all:60 | DataLoader.fetch_all | 6 tickers | 2019-01-01 → 2026-04-01 | interval=5m
+2026-04-01 11:22:23 | INFO     | src.data.loader:fetch_all:70 | NFLX: 1,802 bars in DB — skipping download
+2026-04-01 11:22:23 | INFO     | src.data.loader:fetch_all:70 | COST: 1,802 bars in DB — skipping download
+2026-04-01 11:22:23 | INFO     | src.data.loader:fetch_all:70 | HD: 1,802 bars in DB — skipping download
+2026-04-01 11:22:23 | INFO     | src.data.loader:fetch_all:70 | CRM: 1,802 bars in DB — skipping download
+2026-04-01 11:22:23 | INFO     | src.data.loader:fetch_all:70 | ORCL: 1,802 bars in DB — skipping download
+2026-04-01 11:22:24 | INFO     | src.data.loader:fetch_all:70 | GS: 1,802 bars in DB — skipping download
+2026-04-01 11:22:24 | SUCCESS  | __main__:main:37 | Done! 6/6 tickers loaded. Run 'python scripts/run_backtest.py' next.
