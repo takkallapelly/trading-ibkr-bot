@@ -182,6 +182,7 @@ class AlertSystem:
             daemon=True,
         )
         thread.start()
+        thread.join(timeout=5)  # wait up to 5 seconds for send to complete
 
     def _send_sync(self, message: str) -> None:
         """Synchronous send — runs in background thread."""
