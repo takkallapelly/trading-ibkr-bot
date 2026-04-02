@@ -1,0 +1,4 @@
+2026-04-02 13:06:59 | INFO     | __main__:main:31 | Dashboard starting | http://0.0.0.0:5000
+2026-04-02 13:07:17 | INFO     | src.strategy.signals:__init__:46 | SignalEngine ready | min_score=0.65 | stop=1.5×ATR | target=3.0×ATR
+2026-04-02 13:07:17 | INFO     | src.strategy.meta_labeler:_try_load_model:128 | MetaLabeler: no trained model found — running in pass-through mode (Phase 3). Phase 6 will train the model automatically.
+2026-04-02 13:07:17 | INFO     | src.strategy.engine:__init__:52 | StrategyEngine ready | 10 tickers | meta_labeler=pass-through
