@@ -5,12 +5,12 @@ Guard rules — each rule can BLOCK a signal before it reaches the executor.
 Think of these as bouncers at a club door.
 
 Rules implemented:
-  1. Microstructure guard  — no trades in first/last 15 min (Harris)
-  2. Min score threshold   — signal must be strong enough
-  3. Min ATR filter        — skip stocks with almost no volatility today
-  4. Volume filter         — skip low-volume bars (easy to get bad fills)
+  1. Microstructure guard — no trades in first/last 15 min (Harris)
+  2. Min score threshold — signal must be strong enough
+  3. Min ATR filter — skip stocks with almost no volatility today
+  4. Volume filter — skip low-volume bars (easy to get bad fills)
   5. Direction consistency — RSI and BB must agree on direction
-  6. Risk-reward filter    — skip trades with R:R < 1.0
+  6. Risk-reward filter — skip trades with R:R < 1.0
 
 Each rule is a plain function: (bar, cfg) → (blocked: bool, reason: str)
 Easy to add new rules or disable existing ones in config.yaml.
@@ -32,6 +32,11 @@ def check_market_hours(
     """
     Block trades in the first and last N minutes of the session.
 
+    IMPORTANT: Daily bars from yfinance have timestamps at exactly 16:00:00 ET
+    (market close). These are NOT intraday bars and must NOT be filtered by
+    this rule. We detect daily bars by checking if the time falls outside
+    regular market hours (before/at 9:30 or at/after 16:00).
+
     Why: Spreads are widest, institutional order flow is most aggressive,
     and price moves are least predictable at the open and close.
     Harris calls this the 'opening/closing rotation' risk.
@@ -45,8 +50,14 @@ def check_market_hours(
             return False, ""  # can't check — allow it
 
         t = eastern.time()
-        open_cutoff  = time(9, 30 + avoid_open_min)
-        close_cutoff = time(16, 0)
+
+        # Daily bars land at exactly 16:00:00 ET or before 9:30 ET.
+        # These are NOT intraday bars — skip the guard entirely.
+        if t <= time(9, 30) or t >= time(16, 0):
+            return False, ""
+
+        # Intraday bar — apply the open/close guard
+        open_cutoff = time(9, 30 + avoid_open_min)
 
         # Calculate close cutoff properly
         close_minutes = 16 * 60 - avoid_close_min
@@ -101,7 +112,7 @@ def check_min_atr(
 
 def check_volume(
     bar: pd.Series,
-    min_vol_ratio: float = 0.5,   # at least 50% of average volume
+    min_vol_ratio: float = 0.5,  # at least 50% of average volume
 ) -> tuple[bool, str]:
     """
     Skip bars with very low volume.
@@ -119,7 +130,7 @@ def check_volume(
 
 def check_direction_consistency(
     bar: pd.Series,
-    direction: str,   # "LONG" or "SHORT"
+    direction: str,  # "LONG" or "SHORT"
 ) -> tuple[bool, str]:
     """
     RSI signal and BB signal must agree on direction.
@@ -189,10 +200,10 @@ def apply_all_rules(
         cfg       : config.yaml dict
 
     Returns:
-        (True, reason)  — signal is blocked
-        (False, "")     — all rules passed, signal is valid
+        (True, reason) — signal is blocked
+        (False, "")    — all rules passed, signal is valid
     """
-    c = cfg or {}
+    c    = cfg or {}
     sig  = c.get("signals", {})
     risk = c.get("risk", {})
 

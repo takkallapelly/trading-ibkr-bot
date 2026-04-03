@@ -1,0 +1,29 @@
+﻿# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Environment
+.env
+
+# Data & Databases
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/raw/
+data/processed/
+
+# Logs
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Windows / accidental files
+$null
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

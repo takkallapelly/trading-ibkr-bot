@@ -1,116 +1,67 @@
-# ══════════════════════════════════════════════════════════════════════════════
-#  config/config.yaml  —  all tunable parameters in one place
-#  Environment variables in .env override these at runtime.
-# ══════════════════════════════════════════════════════════════════════════════
-
-# ── Data pipeline ─────────────────────────────────────────────────────────────
+backtest:
+  commission_per_share: 0.005
+  embargo_pct: 0.01
+  end_date: '2024-12-31'
+  initial_capital: 25000
+  n_splits: 6
+  report_dir: reports
+  slippage_bps: 5
+  start_date: '2020-01-01'
+  test_months: 3
+  train_months: 12
+dashboard:
+  equity_curve_days: 90
+  refresh_seconds: 30
+  rolling_sharpe_window: 30
 data:
-  bar_size: "5 mins"              # IBKR bar size string
-  history_days: 365               # days of history to fetch on startup
-  fractional_diff_d: 0.4          # López de Prado: differentiation order (0=raw, 1=returns)
-  min_sample_length: 100          # bars needed before any signal fires
-  store_path: "data/processed"
-  raw_path: "data/raw"
-
-# ── Tickers ───────────────────────────────────────────────────────────────────
-tickers:
-  universe:
-    - META
-    - MSFT
-    - AAPL
-    - NVDA
-    - NFLX
-    - COST
-    - HD
-    - CRM
-    - ORCL
-    - GS
-
-# ── Signal engine ─────────────────────────────────────────────────────────────
+  bar_size: 5 mins
+  fractional_diff_d: 0.4
+  history_days: 365
+  min_sample_length: 100
+  raw_path: data/raw
+  store_path: data/processed
+logging:
+  dir: logs
+  format: '{time:YYYY-MM-DD HH:mm:ss} | {level} | {name} | {message}'
+meta_labeler:
+  confidence_threshold: 0.55
+  enabled: false
+  max_depth: 4
+  model_dir: models
+  model_type: random_forest
+  n_estimators: 200
+risk:
+  atr_period: 14
+  consecutive_loss_halt: 5
+  correlation_threshold: 0.7
+  daily_drawdown_halt: 0.03
+  kelly_fraction: 0.5
+  kelly_lookback: 30
+  max_open_positions: 3
+  max_position_usd: 2500
+  stop_loss_atr_mult: 1.5
+  take_profit_atr_mult: 3.0
 signals:
-  # Primary: RSI(2) extreme reversal
-  rsi:
-    period: 2
-    oversold: 10            # long signal below this
-    overbought: 90          # short signal above this
-    weight: 0.50            # contribution to composite score
-
-  # Secondary: Bollinger Band touch
+  avoid_first_minutes: 15
+  avoid_last_minutes: 15
   bollinger:
     period: 20
     std_dev: 2.0
-    weight: 0.30
-
-  # Tertiary: EMA momentum cross
+    weight: 0.3
   ema:
     fast: 9
     slow: 20
-    weight: 0.20
-
-  # Composite score threshold to open a position
-  min_signal_score: 0.65        # 0.0 – 1.0
-
-  # Only take long trades (buying) — tech stocks trend upward long-term
+    weight: 0.2
   long_only: true
-
-  # Market microstructure: avoid open/close turbulence (Harris)
-  avoid_first_minutes: 15       # minutes after open
-  avoid_last_minutes: 15        # minutes before close
-
-# ── Meta-labeler (Phase 6 ML) ─────────────────────────────────────────────────
-meta_labeler:
-  enabled: false                # enabled automatically once ML_MIN_TRADES is met
-  model_type: "random_forest"   # random_forest | xgboost | lightgbm
-  confidence_threshold: 0.55    # ML must agree with >55% confidence
-  n_estimators: 200
-  max_depth: 4
-  model_dir: "models"
-
-# ── Risk management ───────────────────────────────────────────────────────────
-risk:
-  # Kelly Criterion
-  kelly_fraction: 0.5           # half-Kelly for safety
-  kelly_lookback: 30            # trades to estimate win rate from
-
-  # ATR-based stops
-  atr_period: 14
-  stop_loss_atr_mult: 1.5       # stop = entry ± 1.0 × ATR
-  take_profit_atr_mult: 3.0     # target = entry ± 1.5 × ATR  (Sharpe-positive R:R)
-
-  # Hard caps (Taleb: fat-tail protection)
-  max_position_usd: 2500        # never more than $2,500 in one ticker
-  max_open_positions: 3         # max simultaneous positions across universe
-  correlation_threshold: 0.70   # block new trade if correlated position already open
-
-  # Circuit breakers
-  daily_drawdown_halt: 0.03     # halt if daily P&L < -3%
-  consecutive_loss_halt: 5      # halt after 5 consecutive losses
-
-# ── Backtesting ───────────────────────────────────────────────────────────────
-backtest:
-  start_date: "2020-01-01"
-  end_date: "2024-12-31"
-  commission_per_share: 0.005   # USD per share (IBKR tiered approx.)
-  slippage_bps: 5               # basis points slippage per trade
-  initial_capital: 25000
-
-  # Purged k-fold cross-validation (López de Prado)
-  n_splits: 6
-  embargo_pct: 0.01             # 1% embargo gap between train/test folds
-
-  # Walk-forward windows
-  train_months: 12
-  test_months: 3
-
-  report_dir: "reports"
-
-# ── Dashboard ─────────────────────────────────────────────────────────────────
-dashboard:
-  refresh_seconds: 30
-  rolling_sharpe_window: 30     # trading days
-  equity_curve_days: 90         # days shown on equity chart
-
-# ── Logging ───────────────────────────────────────────────────────────────────
-logging:
-  dir: "logs"
-  format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name} | {message}"
+  min_signal_score: 0.65
+  rsi:
+    overbought: 90
+    oversold: 10
+    period: 2
+    weight: 0.5
+tickers:
+  universe:
+  - AVGO
+  - META
+  - MSFT
+  - COST
