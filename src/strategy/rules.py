@@ -112,7 +112,7 @@ def check_min_atr(
 
 def check_volume(
     bar: pd.Series,
-    min_vol_ratio: float = 0.5,  # at least 50% of average volume
+    min_vol_ratio: float = 0.4,  # at least 50% of average volume
 ) -> tuple[bool, str]:
     """
     Skip bars with very low volume.
