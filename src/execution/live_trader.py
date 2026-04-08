@@ -64,12 +64,31 @@ class LiveTrader:
         """Start the live trading loop. Blocks until stopped."""
         self._init_components()
 
-        if self.is_live:
-            if not self._connect_ibkr():
-                logger.error("IBKR connection failed — aborting")
-                return
+        # ALWAYS connect to IBKR for real-time market data, even in paper mode.
+        # Paper TWS (port 7497) provides live data for free.
+        # Only order execution is simulated locally in paper mode.
+        logger.info(
+            f"Connecting to IBKR for market data | "
+            f"{'LIVE orders' if self.is_live else 'PAPER - orders simulated locally'}"
+        )
+        ibkr_connected = self._connect_ibkr()
+
+        if ibkr_connected:
+            logger.success(
+                f"IBKR connected | real-time TWS data | "
+                f"orders={'LIVE' if self.is_live else 'PAPER simulated'}"
+            )
+            self._intraday.use_ibkr = True
+            self._intraday.client   = self._client
         else:
-            logger.info("Paper mode — IBKR connection skipped (using yfinance)")
+            if self.is_live:
+                logger.error("IBKR connection failed - cannot run live without connection")
+                return
+            else:
+                logger.warning(
+                    "IBKR not connected - falling back to yfinance.\n"
+                    "  Start TWS on port 7497 and enable API connections."
+                )
 
         # Warm up 5-min bar history before entering loop
         logger.info("Warming up intraday data (5-min bars)...")
@@ -77,7 +96,7 @@ class LiveTrader:
 
         if not self._intraday.is_ready(min_bars=25):
             logger.warning(
-                "Not enough intraday bars loaded — "
+                "Not enough intraday bars loaded - "
                 "signals may be unreliable until more bars accumulate"
             )
 
@@ -157,7 +176,13 @@ class LiveTrader:
 
                 if not self._intraday.is_ready(min_bars=25):
                     logger.warning("Insufficient intraday bars — skipping scan")
-                    time.sleep(self.SCAN_INTERVAL_SECS)
+                    # Interruptible sleep — checks _running every second
+                # so Ctrl+C (Strg+C) exits immediately instead of
+                # waiting up to 5 minutes for the sleep to finish.
+                for _ in range(self.SCAN_INTERVAL_SECS):
+                    if not self._running:
+                        break
+                    time.sleep(1)
                     continue
 
                 # ── Signal scan on 5-min bars ─────────────────────────────────
@@ -179,7 +204,13 @@ class LiveTrader:
                     self._send_daily_summary()
                     last_summary_date = today
 
-                time.sleep(self.SCAN_INTERVAL_SECS)
+                # Interruptible sleep — checks _running every second
+                # so Ctrl+C (Strg+C) exits immediately instead of
+                # waiting up to 5 minutes for the sleep to finish.
+                for _ in range(self.SCAN_INTERVAL_SECS):
+                    if not self._running:
+                        break
+                    time.sleep(1)
 
             except KeyboardInterrupt:
                 break
@@ -416,9 +447,9 @@ class LiveTrader:
         intraday_config = _intraday_cfg()
 
         self._intraday  = IntradayFetcher(
-            tickers  = TICKERS,
-            use_ibkr = self.is_live,
-            ibkr_client = self._client,
+        tickers     = TICKERS,
+        use_ibkr    = False,   # updated to True after IBKR connects
+        ibkr_client = None,    # updated after IBKR connects
         )
         self._engine    = StrategyEngine(tickers=TICKERS, config=intraday_config)
         self._risk      = RiskManager(capital=settings.TOTAL_CAPITAL)

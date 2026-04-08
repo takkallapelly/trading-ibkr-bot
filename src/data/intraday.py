@@ -176,7 +176,7 @@ class IntradayFetcher:
             raw = yf.download(
                 ticker,
                 start=start.strftime("%Y-%m-%d"),
-                end=end.strftime("%Y-%m-%d"),
+                end=(end + timedelta(days=1)).strftime("%Y-%m-%d"),  # +1: yfinance end is exclusive
                 interval="5m",
                 auto_adjust=True,
                 progress=False,
