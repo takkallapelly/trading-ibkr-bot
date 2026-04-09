@@ -37,10 +37,10 @@ risk:
   daily_drawdown_halt: 0.03
   kelly_fraction: 0.5
   kelly_lookback: 30
-  max_open_positions: 3
-  max_position_usd: 2500
-  stop_loss_atr_mult: 1.5
-  take_profit_atr_mult: 3.0
+  max_open_positions: 4
+  max_position_usd: 3000
+  stop_loss_atr_mult: 1.0
+  take_profit_atr_mult: 2.0
 signals:
   avoid_first_minutes: 15
   avoid_last_minutes: 15
@@ -53,10 +53,10 @@ signals:
     slow: 20
     weight: 0.2
   long_only: true
-  min_signal_score: 0.60
+  min_signal_score: 0.5
   rsi:
-    overbought: 90
-    oversold: 10
+    overbought: 80
+    oversold: 20
     period: 2
     weight: 0.5
 tickers:
@@ -65,3 +65,6 @@ tickers:
   - META
   - MSFT
   - COST
+  - UNH
+  - XOM
+  - HD
