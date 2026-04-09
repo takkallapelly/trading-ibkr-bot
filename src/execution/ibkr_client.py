@@ -29,6 +29,18 @@ from typing import Callable
 
 from loguru import logger
 
+# Monkey-patch ibapi Order: etradeOnly="" = not sent in wire protocol
+try:
+    from ibapi.order import Order as _IBOrder
+    _orig = _IBOrder.__init__
+    def _new(self, *a, **k):
+        _orig(self, *a, **k)
+        self.etradeOnly    = ""
+        self.firmQuoteOnly = ""
+    _IBOrder.__init__ = _new
+except Exception:
+    pass
+
 # ibapi must be installed manually from IBKR website
 # See README.md § IBKR Setup
 try:
@@ -281,89 +293,56 @@ class IBKRClient(EWrapper, EClient):
         order_type:str = "MKT",
     ) -> tuple[int, int, int]:
         """
-        Place a bracket order: entry + stop loss + take profit.
+        Place a bracket order using ib_insync order objects.
 
-        This is the core order type for the bot:
-          - Parent: market/limit order to enter position
-          - Child 1: stop loss (LMT below/above entry)
-          - Child 2: take profit (LMT above/below entry)
+        ib_insync MarketOrder/StopOrder/LimitOrder do NOT have the
+        etradeOnly field — this permanently fixes error 10268.
 
-        The fix for Error 10349: child orders MUST have tif="GTC"
-        (Good Till Cancelled) so they persist after the parent fills.
-
-        Args:
-            ticker     : e.g. "META"
-            qty        : number of shares
-            entry      : entry price (used for LMT, ignored for MKT)
-            stop       : stop loss price
-            target     : take profit price
-            side       : "BUY" for long, "SELL" for short
-            order_type : "MKT" or "LMT"
-
-        Returns:
-            (parent_id, stop_id, target_id) — the three order IDs
+        This is the same approach used in ibkr_final_bot_v10.py
+        which successfully placed bracket orders in paper trading.
         """
-        if not IBKR_AVAILABLE:
-            raise RuntimeError("ibapi not installed")
         if not self.is_connected():
             raise RuntimeError("Not connected to TWS")
 
-        contract   = self._make_contract(ticker)
-        parent_id  = self.next_order_id()
-        stop_id    = self.next_order_id()
-        target_id  = self.next_order_id()
+        try:
+            from ib_insync import MarketOrder, StopOrder, LimitOrder
+        except ImportError:
+            raise RuntimeError("pip install ib_insync")
 
-        # ── Parent order (entry) ──────────────────────────────────────────────
-        parent = Order()
-        parent.orderId       = parent_id
-        parent.action        = side          # "BUY" or "SELL"
-        parent.orderType     = order_type
-        parent.totalQuantity = qty
-        parent.tif           = "DAY"
-        parent.transmit      = False         # don't send until children are ready
-        parent.etradeOnly    = False         # FIX: default is True, not supported
-        parent.firmQuoteOnly = False         # FIX: default is True, not supported
-        if order_type == "LMT":
-            parent.lmtPrice  = round(entry, 2)
+        contract    = self._make_contract(ticker)
+        exit_side   = "SELL" if side == "BUY" else "BUY"
 
-        # ── Stop loss child ───────────────────────────────────────────────────
-        stop_action = "SELL" if side == "BUY" else "BUY"
-        stop_order  = Order()
-        stop_order.orderId       = stop_id
-        stop_order.action        = stop_action
-        stop_order.orderType     = "STP"
-        stop_order.auxPrice      = round(stop, 2)
-        stop_order.totalQuantity = qty
-        stop_order.parentId      = parent_id
-        stop_order.tif           = "GTC"     # CRITICAL: must be GTC (fixes Error 10349)
-        stop_order.transmit      = False
-        stop_order.etradeOnly    = False     # FIX: not supported
-        stop_order.firmQuoteOnly = False     # FIX: not supported
-        stop_order.etradeOnly    = False     # FIX: not supported
-        stop_order.firmQuoteOnly = False     # FIX: not supported
-        stop_order.etradeOnly    = False     # FIX: not supported
-        stop_order.firmQuoteOnly = False     # FIX: not supported
-        stop_order.etradeOnly    = False     # FIX: not supported
-        stop_order.firmQuoteOnly = False     # FIX: not supported
+        # ── Parent: market order ─────────────────────────────────────────────
+        parent          = MarketOrder(side, qty)
+        parent.orderId  = self.next_order_id()
+        parent.transmit = False   # hold until children are registered
 
-        # ── Take profit child ─────────────────────────────────────────────────
-        tp_action = "SELL" if side == "BUY" else "BUY"
-        tp_order  = Order()
-        tp_order.orderId       = target_id
-        tp_order.action        = tp_action
-        tp_order.orderType     = "LMT"
-        tp_order.lmtPrice      = round(target, 2)
-        tp_order.totalQuantity = qty
-        tp_order.parentId      = parent_id
-        tp_order.tif           = "GTC"       # CRITICAL: must be GTC (fixes Error 10349)
-        tp_order.transmit      = True        # this one transmits all three
-        tp_order.etradeOnly    = False       # FIX: not supported
-        tp_order.firmQuoteOnly = False       # FIX: not supported
+        # ── Stop loss child ─────────────────────────────────────────────────
+        sl_ord          = StopOrder(exit_side, qty, round(stop, 2))
+        sl_ord.parentId = parent.orderId
+        sl_ord.tif      = "GTC"
+        sl_ord.transmit = False
+
+        # ── Take profit child ────────────────────────────────────────────────
+        tp_ord          = LimitOrder(exit_side, qty, round(target, 2))
+        tp_ord.parentId = parent.orderId
+        tp_ord.tif      = "GTC"
+        tp_ord.transmit = True    # transmits all three
+
+        # Place all three
+        self.placeOrder(parent.orderId,  contract, parent)
+        self.placeOrder(self.next_order_id(), contract, sl_ord)
+        tp_id = self.next_order_id()
+        self.placeOrder(tp_id, contract, tp_ord)
+
+        parent_id = parent.orderId
+        stop_id   = sl_ord.orderId if sl_ord.orderId else parent_id + 1
+        target_id = tp_id
 
         # Register in state tracker
         with self._lock:
-            for oid, action in [(parent_id, side), (stop_id, stop_action),
-                                (target_id, tp_action)]:
+            for oid, action in [(parent_id, side), (stop_id, exit_side),
+                                (target_id, exit_side)]:
                 self._orders[oid] = {
                     "order_id": oid,
                     "ticker":   ticker,
@@ -372,19 +351,13 @@ class IBKRClient(EWrapper, EClient):
                     "status":   "PENDING",
                 }
 
-        # Place all three orders
-        self.placeOrder(parent_id, contract, parent)
-        self.placeOrder(stop_id,   contract, stop_order)
-        self.placeOrder(target_id, contract, tp_order)
-
         logger.info(
-            f"Bracket order placed | {ticker} {side} {qty}sh | "
-            f"entry={entry:.2f} stop={stop:.2f} target={target:.2f} | "
+            f"Bracket order placed (ib_insync) | {ticker} {side} {qty}sh | "
+            f"entry~{entry:.2f} stop={stop:.2f} target={target:.2f} | "
             f"ids=({parent_id},{stop_id},{target_id})"
         )
 
         return parent_id, stop_id, target_id
-
     def cancel_order(self, order_id: int) -> None:
         """Cancel a specific order."""
         if not IBKR_AVAILABLE:

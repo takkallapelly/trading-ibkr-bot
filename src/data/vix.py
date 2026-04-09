@@ -133,7 +133,7 @@ def _fetch_vix_yfinance() -> float | None:
     try:
         import yfinance as yf
         data = yf.download(
-            "^VIX", period="1d", interval="5m",
+            "^VIX", period="5d", interval="1h",
             progress=False, threads=False
         )
         if not data.empty:
