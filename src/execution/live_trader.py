@@ -389,9 +389,15 @@ class LiveTrader:
                     from src.data.vix import get_vix, vix_regime_label
                     _vix = get_vix()
                     _regime = vix_regime_label(_vix)
+                    # Get market context summary
+                    try:
+                        mctx = self._engine.get_market_context()
+                        mctx_str = f"SPY={mctx.spy_trend_dir}({mctx.spy_trend_pct:+.1f}%) regime={mctx.market_regime}" if mctx else ""
+                    except Exception:
+                        mctx_str = ""
                     logger.info(
                         f"Scan #{scan_count} | {status['time_eastern']} | "
-                        f"VIX={_vix:.1f}({_regime}) | "
+                        f"VIX={_vix:.1f}({_regime}) | {mctx_str} | "
                         f"open positions: {len(self._order_mgr.open_orders())}"
                     )
                 except Exception:
@@ -679,7 +685,7 @@ class LiveTrader:
         use_ibkr    = False,   # updated to True after IBKR connects
         ibkr_client = None,    # updated after IBKR connects
         )
-        self._engine    = StrategyEngine(tickers=TICKERS, config=intraday_config)
+        self._engine    = StrategyEngine(tickers=TICKERS, config=intraday_config, ibkr_client=self._client)
         self._risk      = RiskManager(capital=settings.TOTAL_CAPITAL)
         self._store     = DataStore()
         self._learner   = SelfLearner()
