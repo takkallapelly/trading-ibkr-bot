@@ -35,10 +35,10 @@ risk:
   consecutive_loss_halt: 5
   correlation_threshold: 0.7
   daily_drawdown_halt: 0.03
-  kelly_fraction: 0.5
+  kelly_fraction: 0.75
   kelly_lookback: 30
-  max_open_positions: 4
-  max_position_usd: 3000
+  max_open_positions: 7
+  max_position_usd: 3500
   stop_loss_atr_mult: 1.0
   take_profit_atr_mult: 2.0
 signals:
@@ -55,8 +55,8 @@ signals:
   long_only: true
   min_signal_score: 0.5
   rsi:
-    overbought: 80
-    oversold: 20
+    overbought: 70
+    oversold: 30
     period: 2
     weight: 0.5
 tickers:

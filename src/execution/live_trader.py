@@ -36,7 +36,7 @@ class LiveTrader:
         trader.stop()    # graceful shutdown
     """
 
-    SCAN_INTERVAL_SECS = 60 * 5   # scan every 5 minutes
+    SCAN_INTERVAL_SECS = 60       # scan every 60 seconds (was 5 min)
 
     def __init__(self, mode: str = "paper"):
         self.mode    = mode

@@ -291,8 +291,8 @@ def _intraday_cfg() -> dict:
     intraday_signals = {
         "rsi": {
             "period":      2,
-            "oversold":    25,    # wider than daily (10) — more noise
-            "overbought":  75,    # wider than daily (90) — more noise
+            "oversold":    30,    # wider than daily (10) — more noise
+            "overbought":  70,    # wider than daily (90) — more noise
             "weight":      0.50,
         },
         "bollinger": {
@@ -305,7 +305,7 @@ def _intraday_cfg() -> dict:
             "slow":   20,
             "weight": 0.20,
         },
-        "min_signal_score":    0.50,
+        "min_signal_score":    0.45,
         "avoid_first_minutes": 15,
         "avoid_last_minutes":  15,
         "long_only":           True,
@@ -316,7 +316,7 @@ def _intraday_cfg() -> dict:
         "atr_period":          14,
         "stop_loss_atr_mult":  1.5,
         "take_profit_atr_mult":3.0,
-        "min_atr_pct":         0.0005,  # 0.1% — realistic for 5-min bars
+        "min_atr_pct":         0.0001,  # 0.1% — realistic for 5-min bars
     }
 
     intraday_data = {

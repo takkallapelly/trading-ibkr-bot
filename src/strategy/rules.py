@@ -96,7 +96,7 @@ def check_min_score(
 
 def check_min_atr(
     bar: pd.Series,
-    min_atr_pct: float = 0.001,
+    min_atr_pct: float = 0.0001,
 ) -> tuple[bool, str]:
     """
     Skip stocks that aren't moving enough today.
@@ -112,7 +112,7 @@ def check_min_atr(
 
 def check_volume(
     bar: pd.Series,
-    min_vol_ratio: float = 0.2,  # at least 50% of average volume
+    min_vol_ratio: float = 0.15,  # at least 50% of average volume
 ) -> tuple[bool, str]:
     """
     Skip bars with very low volume.
@@ -158,7 +158,7 @@ def check_risk_reward(
     entry: float,
     stop: float,
     target: float,
-    min_rr: float = 0.8,
+    min_rr: float = 0.5,
 ) -> tuple[bool, str]:
     """
     Only take trades where reward >= risk.

@@ -134,7 +134,7 @@ def _patch_rsi_logging():
         return original(self)
 
     lt_module.LiveTrader._scan_intraday_signals = patched
-    log.info("RSI logging patch active — values printed every 5-min scan")
+    log.info("RSI logging patch active — values printed every 60-second scan")
 
 
 @click.command()
