@@ -67,6 +67,11 @@ class RiskManager:
                     f"kelly={self.sizer.kelly_fraction} | "
                     f"max_pos=${self.sizer.max_position_usd:,.0f}")
 
+    def set_ibkr_client(self, client) -> None:
+        """Set IBKR client for real-time VIX fetching."""
+        self._ibkr_client = client
+        logger.info("RiskManager: IBKR client connected for real-time VIX")
+
     def approve_entry(self, signal, daily_pnl=0.0,
                       open_positions=None, today=None):
         open_pos = open_positions or self._open_positions
@@ -137,6 +142,15 @@ class RiskManager:
             "shares": order.shares,
             "entry":  order.entry_price,
         })
+
+    def open_position_manual(self, ticker: str, position_usd: float) -> None:
+        """Register a manually recovered position with the risk manager."""
+        try:
+            self._open_positions[ticker] = position_usd
+            logger.info(f"RiskManager: registered recovered position {ticker} ${position_usd:.0f}")
+        except Exception as e:
+            logger.warning(f"Could not register recovered position: {e}")
+
 
     def close_position(self, ticker):
         self._open_positions = [p for p in self._open_positions

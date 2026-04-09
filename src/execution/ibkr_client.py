@@ -142,6 +142,8 @@ class IBKRClient(EWrapper, EClient):
             f"Connected to IBKR | {host}:{port} | "
             f"next_order_id={self._next_order_id}"
         )
+        # Request fresh order ID from IBKR
+        self.reqIds(-1)
         return True
 
     def is_connected(self) -> bool:
@@ -150,9 +152,11 @@ class IBKRClient(EWrapper, EClient):
     # ── EWrapper Callbacks ────────────────────────────────────────────────────
 
     def nextValidId(self, orderId: int) -> None:
-        """Called by TWS on connect — gives us the first valid order ID."""
+        """Called by IBKR with next valid order ID. Sync counter always."""
         with self._lock:
-            self._next_order_id = orderId
+            if orderId > self._next_order_id:
+                logger.info(f"Order ID synced: {self._next_order_id} -> {orderId}")
+                self._next_order_id = orderId
         self._connected.set()
         logger.debug(f"nextValidId: {orderId}")
 
@@ -317,6 +321,8 @@ class IBKRClient(EWrapper, EClient):
         parent.totalQuantity = qty
         parent.tif           = "DAY"
         parent.transmit      = False         # don't send until children are ready
+        parent.etradeOnly    = False         # FIX: default is True, not supported
+        parent.firmQuoteOnly = False         # FIX: default is True, not supported
         if order_type == "LMT":
             parent.lmtPrice  = round(entry, 2)
 
@@ -331,6 +337,14 @@ class IBKRClient(EWrapper, EClient):
         stop_order.parentId      = parent_id
         stop_order.tif           = "GTC"     # CRITICAL: must be GTC (fixes Error 10349)
         stop_order.transmit      = False
+        stop_order.etradeOnly    = False     # FIX: not supported
+        stop_order.firmQuoteOnly = False     # FIX: not supported
+        stop_order.etradeOnly    = False     # FIX: not supported
+        stop_order.firmQuoteOnly = False     # FIX: not supported
+        stop_order.etradeOnly    = False     # FIX: not supported
+        stop_order.firmQuoteOnly = False     # FIX: not supported
+        stop_order.etradeOnly    = False     # FIX: not supported
+        stop_order.firmQuoteOnly = False     # FIX: not supported
 
         # ── Take profit child ─────────────────────────────────────────────────
         tp_action = "SELL" if side == "BUY" else "BUY"
@@ -342,7 +356,9 @@ class IBKRClient(EWrapper, EClient):
         tp_order.totalQuantity = qty
         tp_order.parentId      = parent_id
         tp_order.tif           = "GTC"       # CRITICAL: must be GTC (fixes Error 10349)
-        tp_order.transmit      = True         # this one transmits all three
+        tp_order.transmit      = True        # this one transmits all three
+        tp_order.etradeOnly    = False       # FIX: not supported
+        tp_order.firmQuoteOnly = False       # FIX: not supported
 
         # Register in state tracker
         with self._lock:
