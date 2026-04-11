@@ -25,6 +25,8 @@ from src.config import cfg, TICKERS
 from src.strategy.signals import SignalEngine
 from src.strategy.meta_labeler import MetaLabeler
 from src.strategy.signal import Signal
+from src.strategy.regime import RegimeDetector
+from src.data.market_context import get_market_context, MarketContext
 
 console = Console()
 
@@ -43,42 +45,59 @@ class StrategyEngine:
         self,
         tickers: list[str] | None = None,
         config: dict | None = None,
+        ibkr_client=None,
     ):
-        self.tickers      = tickers or TICKERS
-        self.cfg          = config or cfg
+        self.tickers       = tickers or TICKERS
+        self.cfg           = config or cfg
+        self.ibkr_client   = ibkr_client
         self.signal_engine = SignalEngine(config=self.cfg)
         self.meta_labeler  = MetaLabeler()
+        self.regime        = RegimeDetector()
+        self._market_ctx   = None   # cached market context
 
         logger.info(
             f"StrategyEngine ready | {len(self.tickers)} tickers | "
-            f"meta_labeler={'active' if self.meta_labeler.is_active else 'pass-through'}"
+            f"meta_labeler={'active' if self.meta_labeler.is_active else 'pass-through'} | "
+            f"market_filter=active | regime=active"
         )
 
     def get_signals(
         self,
         tickers: list[str] | None = None,
-        loader=None,          # DataLoader instance
-        bars: dict | None = None,  # pre-loaded bars (for backtesting)
+        loader=None,
+        bars: dict | None = None,
         print_table: bool = False,
     ) -> list[Signal]:
         """
-        Scan tickers and return actionable signals after meta-labeling.
-
-        Args:
-            tickers     : override ticker list for this call
-            loader      : DataLoader to fetch latest bars from
-            bars        : pre-loaded {ticker: bar_series} dict (backtesting)
-            print_table : print a summary table to the terminal
-
-        Returns:
-            List of actionable Signal objects, sorted by score descending.
+        Scan tickers and return actionable signals after:
+          1. Market context filter (VIX, SPY trend, VWAP)
+          2. Per-ticker regime filter (Hurst exponent)
+          3. Signal engine (RSI/BB/EMA)
+          4. Meta-labeler (ML vetting)
+          5. Score-weighted position sizing adjustment
         """
         scan_tickers = tickers or self.tickers
 
-        # ── Get latest bars ───────────────────────────────────────────────────
+        # ── Step 1: Market context (VIX + SPY) ───────────────────────────────
+        try:
+            ctx = get_market_context(self.ibkr_client)
+            self._market_ctx = ctx
+            logger.info(f"Market: {ctx}")
+
+            # Hard blocks
+            if not ctx.allow_longs and not ctx.allow_shorts:
+                logger.warning(
+                    f"Market filter: ALL TRADING BLOCKED | {ctx.reason}"
+                )
+                return []
+
+        except Exception as e:
+            logger.warning(f"Market context failed: {e} — trading without filter")
+            ctx = None
+
+        # ── Step 2: Get latest bars ───────────────────────────────────────────
         if bars is None:
             if loader is None:
-                # Import here to avoid circular imports
                 from src.data.loader import DataLoader
                 loader = DataLoader(tickers=scan_tickers)
             bars = {
@@ -88,19 +107,53 @@ class StrategyEngine:
             }
 
         if not bars:
-            logger.warning("StrategyEngine: no bars available to scan")
+            logger.warning("StrategyEngine: no bars available")
             return []
 
-        # ── Layer 1+2+3: signal engine scan ───────────────────────────────────
+        # ── Step 3: Signal engine scan ────────────────────────────────────────
         raw_signals = self.signal_engine.scan(bars)
 
-        # ── Meta-labeler vetting ──────────────────────────────────────────────
+        # ── Step 4: Market direction filter ──────────────────────────────────
+        if ctx:
+            filtered = []
+            for s in raw_signals:
+                from src.strategy.signal import Direction
+                if s.direction == Direction.LONG and not ctx.allow_longs:
+                    logger.info(f"{s.ticker}: LONG blocked by market filter | {ctx.reason}")
+                    continue
+                if s.direction == Direction.SHORT and not ctx.allow_shorts:
+                    logger.info(f"{s.ticker}: SHORT blocked by market filter | {ctx.reason}")
+                    continue
+                filtered.append(s)
+            raw_signals = filtered
+
+        # ── Step 5: Meta-labeler vetting ──────────────────────────────────────
         approved = self.meta_labeler.approve_all(raw_signals)
+
+        # ── Step 6: Attach position multiplier to each signal ─────────────────
+        if ctx and approved:
+            for s in approved:
+                # Score-weighted sizing: stronger signal = bigger position
+                score_mult = 1.0
+                if s.score >= 0.65:   score_mult = 1.3   # strong signal
+                elif s.score >= 0.55: score_mult = 1.0   # medium signal
+                else:                  score_mult = 0.7   # weak signal
+
+                # Combined multiplier
+                s._position_mult = round(ctx.position_mult * score_mult, 2)
+                logger.debug(
+                    f"{s.ticker}: pos_mult={s._position_mult:.2f} "
+                    f"(market={ctx.position_mult:.1f} x score={score_mult:.1f})"
+                )
 
         if print_table:
             self._print_signals(bars, approved)
 
         return approved
+
+    def get_market_context(self):
+        """Return cached market context from last scan."""
+        return self._market_ctx
 
     def scan_all_and_print(self, loader=None) -> list[Signal]:
         """

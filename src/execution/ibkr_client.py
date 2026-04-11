@@ -318,16 +318,18 @@ class IBKRClient(EWrapper, EClient):
         parent.transmit = False   # hold until children are registered
 
         # ── Stop loss child ─────────────────────────────────────────────────
-        sl_ord          = StopOrder(exit_side, qty, round(stop, 2))
-        sl_ord.parentId = parent.orderId
-        sl_ord.tif      = "GTC"
-        sl_ord.transmit = False
+        sl_ord              = StopOrder(exit_side, qty, round(stop, 2))
+        sl_ord.parentId     = parent.orderId
+        sl_ord.tif          = "GTC"
+        sl_ord.outsideRth   = False
+        sl_ord.transmit     = False
 
         # ── Take profit child ────────────────────────────────────────────────
-        tp_ord          = LimitOrder(exit_side, qty, round(target, 2))
-        tp_ord.parentId = parent.orderId
-        tp_ord.tif      = "GTC"
-        tp_ord.transmit = True    # transmits all three
+        tp_ord              = LimitOrder(exit_side, qty, round(target, 2))
+        tp_ord.parentId     = parent.orderId
+        tp_ord.tif          = "GTC"
+        tp_ord.outsideRth   = False
+        tp_ord.transmit     = True    # transmits all three
 
         # Place all three
         self.placeOrder(parent.orderId,  contract, parent)
