@@ -4,9 +4,6 @@ Automated intraday equity trading system for Interactive Brokers.
 Targets large-cap tech (TSLA, NVDA, META, GOOGL, AMD, MSFT, AMZN, AAPL) with a  
 self-improving three-layer signal architecture.
 
-
-
-
 ---
 
 ## Architecture
