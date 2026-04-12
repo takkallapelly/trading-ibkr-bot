@@ -184,7 +184,8 @@ class IBKRClient(EWrapper, EClient):
           504               — not connected
         """
         # Informational codes — not real errors
-        IGNORE_CODES = {2104, 2106, 2158, 2119, 2157, 2176}
+        # 2103/2105/2110: market data farms broken (normal outside market hours)
+        IGNORE_CODES = {2104, 2106, 2158, 2119, 2157, 2176, 2103, 2105, 2110}
         if errorCode in IGNORE_CODES:
             logger.debug(f"IBKR info {errorCode}: {errorString}")
             return
@@ -318,27 +319,25 @@ class IBKRClient(EWrapper, EClient):
         parent.transmit = False   # hold until children are registered
 
         # ── Stop loss child ─────────────────────────────────────────────────
-        sl_ord              = StopOrder(exit_side, qty, round(stop, 2))
-        sl_ord.parentId     = parent.orderId
-        sl_ord.tif          = "GTC"
-        sl_ord.outsideRth   = False
-        sl_ord.transmit     = False
+        sl_ord          = StopOrder(exit_side, qty, round(stop, 2))
+        sl_ord.parentId = parent.orderId
+        sl_ord.tif      = "GTC"
+        sl_ord.transmit = False
 
         # ── Take profit child ────────────────────────────────────────────────
-        tp_ord              = LimitOrder(exit_side, qty, round(target, 2))
-        tp_ord.parentId     = parent.orderId
-        tp_ord.tif          = "GTC"
-        tp_ord.outsideRth   = False
-        tp_ord.transmit     = True    # transmits all three
+        tp_ord          = LimitOrder(exit_side, qty, round(target, 2))
+        tp_ord.parentId = parent.orderId
+        tp_ord.tif      = "GTC"
+        tp_ord.transmit = True    # transmits all three
 
-        # Place all three
-        self.placeOrder(parent.orderId,  contract, parent)
-        self.placeOrder(self.next_order_id(), contract, sl_ord)
+        # Place all three — capture each order ID explicitly
+        self.placeOrder(parent.orderId, contract, parent)
+        stop_id = self.next_order_id()
+        self.placeOrder(stop_id, contract, sl_ord)
         tp_id = self.next_order_id()
         self.placeOrder(tp_id, contract, tp_ord)
 
         parent_id = parent.orderId
-        stop_id   = sl_ord.orderId if sl_ord.orderId else parent_id + 1
         target_id = tp_id
 
         # Register in state tracker

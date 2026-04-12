@@ -56,6 +56,36 @@ make dashboard     # http://localhost:5000
 
 ---
 
+## Windows Quick Start
+
+No WSL required. Use the provided batch files:
+
+```batch
+REM 1. First-time setup (installs dependencies, creates .env)
+setup.bat
+
+REM 2. Edit .env with your values
+notepad .env
+
+REM 3. Install IBKR API (see IBKR Setup section below)
+
+REM 4. Run backtest
+run.bat backtest
+
+REM 5. Paper trade
+run.bat paper
+
+REM 6. Open dashboard
+run.bat dashboard
+
+REM 7. Diagnose your paper results
+run.bat diagnose
+```
+
+All `make` commands have a `run.bat` equivalent. Run `run.bat help` to see the full list.
+
+---
+
 ## IBKR Setup
 
 The IBKR Python API is **not on PyPI** â€” you must install it manually.
@@ -165,6 +195,62 @@ trading-bot/
 - **Max 3 simultaneous positions.** Never more than 20% of capital in open positions.
 - **Hard position cap.** No single ticker ever exceeds `$2,500` regardless of Kelly.
 - **Microstructure guard.** No orders in first or last 15 minutes of each session.
+
+---
+
+## Safety
+
+- **Paper mode by default.** Live orders require `TRADING_MODE=live` in `.env` AND `--live` flag AND terminal confirmation.
+- **Daily drawdown circuit breaker.** Bot halts if daily P&L drops below `-3%` of capital.
+- **Max 3 simultaneous positions.** Never more than 20% of capital in open positions.
+- **Hard position cap.** No single ticker ever exceeds `$2,500` regardless of Kelly.
+- **Microstructure guard.** No orders in first or last 15 minutes of each session.
+
+---
+
+## QuantConnect Research Layer (Hybrid Approach)
+
+The `quantconnect/` directory contains a mirror of this strategy as a
+QuantConnect Cloud algorithm — used for backtesting parameter variants
+against 20 years of survivorship-bias-free data before applying changes
+to the live bot.
+
+### Diagnostic First
+
+Before researching new parameters, run the diagnostic tool to see where
+your current live/paper results are leaking edge:
+
+```bash
+# Mac / Linux
+python scripts/diagnose_paper.py --html
+
+# Windows
+run.bat diagnose-html
+```
+
+This produces a report breaking down performance by ticker, hour of day,
+signal score bucket, and stop-out rate — pointing exactly where to focus.
+
+### Research Workflow
+
+1. `run.bat diagnose` — identify what is broken
+2. Open `quantconnect/parameter_variants.py` — pick a matching variant
+3. Paste `quantconnect/rsi_mean_reversion.py` into QC Cloud (free account)
+4. Edit parameters at the top to match your chosen variant
+5. Run backtest in QC — validate Sharpe, CAGR, MaxDD over 5+ years
+6. `python scripts/sync_qc_params.py --variant <name> --dry-run` — review diff
+7. `python scripts/sync_qc_params.py --variant <name>` — apply to config.yaml
+8. `run.bat backtest` — verify locally
+9. `run.bat paper` (2 weeks minimum) — paper trade the new params
+10. `run.bat live` — promote to live
+
+### Why This Matters
+
+Your local backtest uses yfinance data (5 years, 10 hardcoded tickers).
+QC's backtest uses AlgoSeek institutional data (20 years, all tickers,
+survivorship-bias-free). A strategy that looks good locally but fails
+in QC almost certainly has data snooping bias — the QC result is the
+higher-trust signal.
 
 ---
 

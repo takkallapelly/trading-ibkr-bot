@@ -37,13 +37,14 @@ risk:
   daily_drawdown_halt: 0.03
   kelly_fraction: 0.75
   kelly_lookback: 30
-  max_open_positions: 7
+  max_open_positions: 5
   max_position_usd: 3500
   stop_loss_atr_mult: 1.0
   take_profit_atr_mult: 2.0
 signals:
   avoid_first_minutes: 15
   avoid_last_minutes: 15
+  spy_rsi_min: 30
   bollinger:
     period: 20
     std_dev: 2.0
@@ -53,18 +54,32 @@ signals:
     slow: 20
     weight: 0.2
   long_only: true
-  min_signal_score: 0.5
+  min_signal_score: 0.6
   rsi:
-    overbought: 70
-    oversold: 30
+    overbought: 90
+    oversold: 10
     period: 2
     weight: 0.5
 tickers:
   universe:
-  - AVGO
-  - META
   - MSFT
-  - COST
+  - AVGO
   - UNH
-  - XOM
+  - META
+  - LLY
+  - V
+  - JPM
   - HD
+  - PG
+  - GS
+diagnostics:
+  min_trades_required: 20
+  stop_out_rate_threshold: 0.6
+  min_win_rate_threshold: 0.42
+  score_bucket_bins:
+  - 0.6
+  - 0.7
+  - 0.8
+  - 1.01
+quantconnect:
+  sync_log: reports/qc_sync_log.jsonl

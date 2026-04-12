@@ -175,7 +175,35 @@ def check_risk_reward(
     return False, ""
 
 
-# ── Apply all rules ────────────────────────────────────────────────────────────
+# ── Rule 7: SPY regime filter ──────────────────────────────────────────────────
+
+def check_spy_regime(
+    cfg: dict | None = None,
+) -> tuple[bool, str]:
+    """
+    Block LONG entries when the broad market (SPY) is in freefall.
+
+    SPY RSI(2) < 30 means the S&P 500 itself is oversold — individual
+    stocks are likely falling with the market, not mean-reverting.
+    Buying into a market crash amplifies losses across all positions.
+
+    The SPY RSI is read from a shared cache updated each scan cycle.
+    Falls back to allowing the trade if SPY data is unavailable.
+    """
+    c = cfg or {}
+    spy_rsi = c.get("_spy_rsi")          # injected by StrategyEngine each scan
+    threshold = c.get("signals", {}).get("spy_rsi_min", 30)
+
+    if spy_rsi is None:
+        return False, ""                  # no data — don't block
+
+    if spy_rsi < threshold:
+        return True, f"SPY regime filter: RSI(2)={spy_rsi:.1f} < {threshold} (market in freefall)"
+
+    return False, ""
+
+
+
 
 def apply_all_rules(
     bar: pd.Series,
@@ -224,6 +252,7 @@ def apply_all_rules(
             entry, stop, target,
             min_rr = risk.get("stop_loss_atr_mult", 1.0),  # R:R >= stop multiplier
         ),
+        lambda: check_spy_regime(c),
     ]
 
     for rule in rules:

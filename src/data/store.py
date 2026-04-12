@@ -228,6 +228,22 @@ class DataStore:
         with self._connect() as conn:
             return pd.read_sql_query(query, conn, params=params)
 
+    def load_trades_full(self) -> pd.DataFrame:
+        """
+        Load all closed trades with every column needed by TradeAnalyzer.
+        Returns empty DataFrame if no closed trades exist.
+        """
+        query = """
+            SELECT ticker, side, entry_time, exit_time,
+                   entry_price, exit_price, stop_price, target_price,
+                   qty, pnl, pnl_pct, signal_score, exit_reason, ibkr_order_id
+            FROM trades
+            WHERE exit_time IS NOT NULL AND pnl IS NOT NULL
+            ORDER BY entry_time
+        """
+        with self._connect() as conn:
+            return pd.read_sql_query(query, conn)
+
     def open_trades(self) -> pd.DataFrame:
         """Return all currently open positions."""
         with self._connect() as conn:

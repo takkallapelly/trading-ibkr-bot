@@ -1,0 +1,1 @@
+{"timestamp": "2026-04-11T23:28:19.518607", "variant": "baseline", "description": "Exact match to current live bot. Use as benchmark.", "params_applied": {"RSI_OVERSOLD": 10, "RSI_OVERBOUGHT": 90, "BB_STD": 2.0, "MIN_SCORE": 0.6, "STOP_ATR_MULT": 1.0, "TARGET_ATR_MULT": 2.0}}

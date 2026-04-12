@@ -11,7 +11,11 @@ Usage:
     python scripts/fetch_data.py --tickers TSLA NVDA --force
 """
 
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import click
+
 from src.logger import setup_logging, get_logger
 from src.config import TICKERS
 

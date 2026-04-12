@@ -203,6 +203,8 @@ class CorrelationGuard:
         "AMD":   ["NVDA"],
         "TSLA":  [],
         "AMZN":  ["META", "GOOGL"],
+        "JPM":   ["GS"],              # financials — move together
+        "GS":    ["JPM"],
     }
 
     def __init__(self, threshold: float = 0.70):

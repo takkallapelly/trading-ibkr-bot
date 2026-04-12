@@ -2,12 +2,13 @@
 Execution Strategy Comparison Backtest
 Tests 4 execution methods on the same RSI(2) signals:
 1. Baseline   — buy at signal-day close (current backtest assumption)
-2. Next Open  — buy at next day open (realistic current bot behavior)  
+2. Next Open  — buy at next day open (realistic current bot behavior)
 3. Limit Dip  — buy at next day's low+10% of range (morning dip)
 4. Adaptive   — IBKR adaptive simulation (0.15% better than open)
 """
 
-import sys
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pandas as pd
 import yfinance as yf

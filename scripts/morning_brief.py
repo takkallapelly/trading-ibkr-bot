@@ -153,8 +153,8 @@ def calculate_levels(ticker: str) -> dict:
             return {}
 
         # Previous day's OHLC
-        prev      = data.iloc[-2].squeeze()
-        today     = data.iloc[-1].squeeze()
+        prev      = data.iloc[-2]
+        today     = data.iloc[-1]
         prev_high = float(prev["High"])
         prev_low  = float(prev["Low"])
         prev_close= float(prev["Close"])

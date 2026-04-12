@@ -13,10 +13,10 @@ import numpy as np
 class TestDataLoader:
     """Integration tests that hit yfinance — run with make test."""
 
-    def test_loader_raises_not_implemented_before_phase2(self):
+    def test_loader_initialises_successfully(self):
         from src.data.loader import DataLoader
-        with pytest.raises(NotImplementedError):
-            DataLoader()
+        loader = DataLoader()
+        assert loader is not None
 
 
 class TestFeatureHelpers:

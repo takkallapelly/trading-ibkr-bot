@@ -146,7 +146,11 @@ class RiskManager:
     def open_position_manual(self, ticker: str, position_usd: float) -> None:
         """Register a manually recovered position with the risk manager."""
         try:
-            self._open_positions[ticker] = position_usd
+            self._open_positions.append({
+                "ticker":   ticker,
+                "side":     "LONG",
+                "size_usd": position_usd,
+            })
             logger.info(f"RiskManager: registered recovered position {ticker} ${position_usd:.0f}")
         except Exception as e:
             logger.warning(f"Could not register recovered position: {e}")
