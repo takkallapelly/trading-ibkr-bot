@@ -323,6 +323,30 @@ class LiveTrader:
     def stop(self) -> None:
         """Graceful shutdown."""
         logger.info("LiveTrader stopping...")
+# ── NEW: mark all open paper trades as closed ──────────────────
+    try:
+        if not self.is_live and self._order_mgr and self._intraday:
+            from src.execution.order_manager import OrderState
+            from datetime import datetime
+            for order in self._order_mgr.open_orders():
+                if order.state == OrderState.FILLED:
+                    bar = self._intraday.get_latest(order.ticker)
+                    exit_price = float(bar.get("close", order.fill_price)) if bar else order.fill_price
+                    direction = 1 if order.side == "LONG" else -1
+                    pnl = round(direction * (exit_price - order.fill_price) * order.qty, 2)
+                    if hasattr(order, "db_trade_id") and order.db_trade_id:
+                        self._store.update_trade(order.db_trade_id, {
+                            "exit_time": datetime.utcnow().isoformat(),
+                            "exit_price": exit_price,
+                            "pnl": pnl,
+                            "pnl_pct": pnl / (order.fill_price * order.qty),
+                            "exit_reason": "EOD_SHUTDOWN",
+                        })
+                        log.info(f"EOD close: {order.ticker} pnl=${pnl:.2f}")
+    except Exception as e:
+        log.warning(f"EOD close error: {e}")
+    # ── END NEW ────────────────────────────────────────────────────
+
         self._running = False
 
         if self._client and self._client.is_connected():
