@@ -316,6 +316,7 @@ class IBKRClient(EWrapper, EClient):
         # ── Parent: market order ─────────────────────────────────────────────
         parent          = MarketOrder(side, qty)
         parent.orderId  = self.next_order_id()
+        parent.tif      = "DAY"   # explicit DAY silences error 10349
         parent.transmit = False   # hold until children are registered
 
         # ── Stop loss child ─────────────────────────────────────────────────
