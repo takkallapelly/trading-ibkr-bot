@@ -84,6 +84,13 @@ class LiveTrader:
             if hasattr(self._risk, 'set_ibkr_client'):
                 self._risk.set_ibkr_client(self._client)
                 logger.info('RiskManager: using IBKR real-time VIX')
+            # Wire IBKR client into VIX module for direct index fetch
+            try:
+                from src.data.vix import set_ibkr_client as vix_set_client
+                vix_set_client(self._client)
+                logger.info("VIX: IBKR client registered for direct index fetch")
+            except Exception as e:
+                logger.warning(f"VIX IBKR registration failed: {e}")
         else:
             if self.is_live:
                 logger.error("IBKR connection failed - cannot run live without connection")
@@ -106,6 +113,16 @@ class LiveTrader:
                 "Not enough intraday bars loaded - "
                 "signals may be unreliable until more bars accumulate"
             )
+
+        # ── Auto-reset circuit breaker every fresh start ───────────────
+        try:
+            from src.risk.circuit_breaker import CircuitBreaker
+            cb = CircuitBreaker()
+            cb.reset()
+            logger.info("Circuit breaker reset — fresh session")
+        except Exception as e:
+            logger.warning(f"Circuit breaker reset skipped: {e}")
+        # ── END ────────────────────────────────────────────────────────
 
         self._running = True
         self._alerts.bot_started(self.mode)
@@ -321,39 +338,11 @@ class LiveTrader:
             logger.error(f"Position recovery error: {e}")
 
     def stop(self) -> None:
-        """Graceful shutdown with EOD close of open paper positions."""
+        """Graceful shutdown."""
         logger.info("LiveTrader stopping...")
+    # ── EOD zombie fix ─────────────────────────────────────
 
-        # ── EOD close: mark all open paper positions in DB ─────────────────
-        try:
-            if self._order_mgr and self._intraday:
-                from src.execution.order_manager import OrderState
-                for order in self._order_mgr.open_orders():
-                    if order.state == OrderState.FILLED:
-                        bar = self._intraday.get_latest(order.ticker)
-                        exit_price = (
-                            float(bar.get("close", order.fill_price))
-                            if bar else order.fill_price
-                        )
-                        direction = 1 if order.side == "LONG" else -1
-                        pnl = round(
-                            direction * (exit_price - order.fill_price) * order.qty, 2
-                        )
-                        if hasattr(order, "db_trade_id") and order.db_trade_id:
-                            self._store.update_trade(order.db_trade_id, {
-                                "exit_time":  datetime.utcnow().isoformat(),
-                                "exit_price": exit_price,
-                                "pnl":        pnl,
-                                "pnl_pct":    pnl / (order.fill_price * order.qty),
-                                "exit_reason": "EOD_SHUTDOWN",
-                            })
-                            logger.info(
-                                f"EOD close: {order.ticker} "
-                                f"exit=${exit_price:.2f} pnl=${pnl:.2f}"
-                            )
-        except Exception as e:
-            logger.warning(f"EOD close error: {e}")
-        # ── END EOD close ───────────────────────────────────────────────────
+    # ── END ────────────────────────────────────────────────
 
         self._running = False
 
@@ -410,17 +399,6 @@ class LiveTrader:
                     )
                     time.sleep(30)
                     continue
-
-                # ── Auto-reconnect if IBKR dropped ───────────────────────────
-                if self._client and not self._client.is_connected():
-                    logger.warning("IBKR disconnected — attempting reconnect...")
-                    reconnected = self._reconnect_ibkr()
-                    if reconnected:
-                        logger.success("IBKR reconnected — resuming live data")
-                    else:
-                        logger.warning(
-                            "Reconnect failed — using yfinance fallback this scan"
-                        )
 
                 # ── Refresh 5-min intraday bars ───────────────────────────────
                 scan_count += 1
@@ -737,26 +715,6 @@ class LiveTrader:
             f"rsi_oversold=15 | rsi_overbought=85 | "
             f"stop=1.5×ATR | target=3.0×ATR"
         )
-
-    def _reconnect_ibkr(self) -> bool:
-        """Attempt to reconnect to IBKR after a disconnect."""
-        logger.warning("Attempting IBKR reconnect...")
-        try:
-            from src.execution.ibkr_client import IBKRClient
-            self._client = IBKRClient()
-            self._client.on("fill",         self._on_ibkr_fill)
-            self._client.on("order_status", self._on_order_status)
-            connected = self._client.connect_and_run()
-            if connected:
-                self._intraday.client   = self._client
-                self._intraday.use_ibkr = True
-                if hasattr(self._risk, "set_ibkr_client"):
-                    self._risk.set_ibkr_client(self._client)
-                logger.success("IBKR reconnected successfully")
-            return connected
-        except Exception as e:
-            logger.error(f"Reconnect failed: {e}")
-            return False
 
     def _connect_ibkr(self) -> bool:
         from src.execution.ibkr_client import IBKRClient
